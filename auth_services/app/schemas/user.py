@@ -33,3 +33,6 @@ class AuthResponse(UserOut):
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
+class LoginRequest(BaseModel):
+    email_or_phone: str
+    password: str
