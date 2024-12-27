@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaPhoneAlt, FaEnvelope, FaLock } from 'react-icons/fa';
 import PhoneInput from 'react-phone-input-2';  
@@ -15,6 +15,7 @@ type FormData = {
 
 const Register = () => {
   const router = useRouter();
+  const [errorMessages, setErrorMessages] = useState<string[]>([]);
 
   const {
     register,
@@ -44,24 +45,36 @@ const Register = () => {
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Error:', errorData);
-        alert(`Error: ${errorData.message || 'Unable to create user'}`);
+        setErrorMessages([errorData.message || 'Unable to create user']);
       } else {
         const responseData = await response.json();
         console.log('User created successfully:', responseData);
-        alert('User created successfully!');
+        setErrorMessages([]);
         
-        // Navigate to the activation page
+        localStorage.setItem('cb-user-email', data.email);
+
         router.push('/auth/activation'); 
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('An error occurred while creating the user.');
+      setErrorMessages(['An error occurred while creating the user.']);
     }
   };
 
   return (
     <div className="min-h-screen flex justify-center dark:bg-grey-800">
       <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-sm">
+        {/* Error message box */}
+        {errorMessages.length > 0 && (
+          <div className="bg-red-100 text-red-700 border border-red-300 p-4 mb-4 rounded-md">
+            <ul>
+              {errorMessages.map((message, index) => (
+                <li key={index}>{message}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Email field */}
         <div className="mb-5 flex items-center">
           <div className="w-full">
@@ -92,9 +105,8 @@ const Register = () => {
               placeholder="Enter phone number"
               containerClass="text-black"
               inputProps={{
-                className: `
-                  pl-12 text-sm bg-white text-gray-800 border border-gray-300 rounded-lg w-full 
-                  dark:bg-gray-800 dark:text-white dark:border-gray-600
+                className: `pl-12 text-sm bg-white text-gray-800 border border-gray-300 rounded-lg w-full 
+                dark:bg-gray-800 dark:text-white dark:border-gray-600
                 `,
               }}
               onChange={(value) => setValue('phone', value, { shouldValidate: true })}
@@ -115,7 +127,14 @@ const Register = () => {
               id="password"
               className="text-sm bg-gray-50 border border-gray-300 text-gray-900 rounded-lg pl-3 py-2 w-full focus:ring-blue-500 focus:border-blue-500 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder="Your password"
-              {...register('password', { required: 'Password is required', minLength: { value: 6, message: 'Password must be at least 6 characters' } })}
+              {...register('password', {
+                required: 'Password is required',
+                minLength: { value: 6, message: 'Password must be at least 6 characters' },
+                pattern: {
+                  value: /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/, 
+                  message: 'Password must contain at least one capital letter, one number, and one special character',
+                },
+              })}
             />
             {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
           </div>
