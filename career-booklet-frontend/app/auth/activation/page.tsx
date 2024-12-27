@@ -23,7 +23,7 @@ const Activation: React.FC = () => {
     if (activationSuccess && countdown > 0) {
       interval = setInterval(() => {
         setCountdown((prev) => {
-          if (prev <= 1) {
+          if (prev <= 0) {
             clearInterval(interval);
             router.push('/'); 
           }

@@ -64,7 +64,7 @@ const Login: React.FC = () => {
           console.error('OTP verification failed:', errorData);
           setError('emailOrPhone', {
             type: 'manual',
-            message: errorData.message || 'Invalid OTP',
+            message: errorData.detail || 'Invalid OTP',
           });
         }
       } catch (error) {
@@ -98,7 +98,7 @@ const Login: React.FC = () => {
           console.error('Login failed:', errorData);
           setError('emailOrPhone', {
             type: 'manual',
-            message: errorData.message || 'Invalid credentials',
+            message: errorData.detail || 'Invalid credentials',
           });
         }
       } catch (error) {
@@ -246,6 +246,11 @@ const Login: React.FC = () => {
           >
             {isOtpLogin ? 'Login with Password?' : 'Login with OTP?'}
           </button>
+        </div>
+        <div className='text-sm text-center mt-2 text-gray-400'>
+          <Link href='/auth/activation'>
+          Registered but Account not Activated?
+          </Link>
         </div>
       </form>
     </div>

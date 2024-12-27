@@ -67,8 +67,8 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
               </div>
               {!loading && <>
               {!isAuthenticated && (
-                <div className="font-bold dark:text-white">
-                  <Link href='/auth'>Sign Up</Link>
+                <div className=" dark:text-white hover:font-medium">
+                  <Link href='/auth'>Sign In</Link>
                 </div>
               )}
               {isAuthenticated && (
@@ -127,7 +127,7 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
             </li>
             <li>
                 <div className="flex items-center p-2 text-gray-800 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                <GoVideo className="text-xl "/>
+                <GoVideo className="text-xl text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white "/>
                 <span className="flex-1 ms-3 whitespace-nowrap">Learning</span>
                 </div>
             </li>
@@ -137,11 +137,11 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
                     <path d="M14 2a3.963 3.963 0 0 0-1.4.267 6.439 6.439 0 0 1-1.331 6.638A4 4 0 1 0 14 2Zm1 9h-1.264A6.957 6.957 0 0 1 15 15v2a2.97 2.97 0 0 1-.184 1H19a1 1 0 0 0 1-1v-1a5.006 5.006 0 0 0-5-5ZM6.5 9a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9ZM8 10H5a5.006 5.006 0 0 0-5 5v2a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-2a5.006 5.006 0 0 0-5-5Z"/>
                 </svg>
                 <span className="flex-1 ms-3 whitespace-nowrap">Posts</span>
-                </a>
+                </a> 
             </li>
             <li>
-                <a href="#" className="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                <IoBriefcaseSharp className="text-xl"/>
+                <a href="#" className="flex items-center p-2 text-gray-400 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
+                <IoBriefcaseSharp className="text-xl text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"/>
                 <span className="flex-1 ms-3 whitespace-nowrap">Jobs</span>
                 </a>
             </li>
@@ -157,7 +157,7 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
             </li>
             <li>
                 <a href="#" className="flex items-center p-2 text-gray-900 transition duration-75 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white group">
-                <IoSettings className="text-xl"/>
+                <IoSettings className="text-xl text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"/>
                 <span className="ms-3">Settings</span>
                 </a>
             </li>
@@ -167,9 +167,9 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
                 <button
                     className="flex items-center text-gray-900 transition duration-75 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white">
                     {isDarkMode ? (
-                    <FaSun className="text-yellow-500 text-lg" />
+                    <FaSun className="text-yellow-400 group-hover:text-yellow-300 text-lg" />
                     ) : (
-                    <FaMoon className="text-gray-800 text-lg" />
+                    <FaMoon className="text-lg text-gray-500 group-hover:text-gray-900" />
                     )}
                     <span className="ms-3">{isDarkMode ? "Light Mode" : "Dark Mode"}</span>
                 </button>
@@ -177,7 +177,7 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
             </li>
             <li>
                 <a href="#" className="flex items-center p-2 text-gray-900 transition duration-75 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white group">
-                <MdHelp className="text-xl"/>
+                <MdHelp className="text-xl text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"/>
                 <span className="ms-3">Help</span>
                 </a>
             </li>
