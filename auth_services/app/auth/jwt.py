@@ -7,6 +7,11 @@ from dotenv import load_dotenv
 import os
 
 
+SECRET_KEY = 'c0d91c42f8aac2ab9103fc265ee21ecaa995f78cdaf0e08044f3ccbe8ece679d'
+ALGORITHM = 'HS256'
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+REFRESH_TOKEN_EXPIRE_MINUTES = 1440
+
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
