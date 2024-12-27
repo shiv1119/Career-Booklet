@@ -4,6 +4,8 @@ import { FaMoon, FaSun } from 'react-icons/fa';
 import { GoVideo } from 'react-icons/go';
 import { IoBriefcaseSharp, IoSettings } from "react-icons/io5";
 import { MdHelp } from "react-icons/md";
+import { useAuth } from "@/contexts/AuthContext";
+import Link from "next/link";
 
 interface NavbarProps {
   children: ReactNode;
@@ -12,7 +14,7 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ children }) => {
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
-
+  const {isAuthenticated} = useAuth();
   const toggleMode = () => {
     setIsDarkMode(!isDarkMode);
   };
@@ -46,10 +48,18 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
                 <path clipRule="evenodd" fillRule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"></path>
                 </svg>
             </button>
-            <a href="https://flowbite.com" className="flex ms-2 md:me-24">
+            <Link href="/" className="flex ms-2 md:me-24">
             <span className="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap dark:text-white">Career Booklet</span>
-            </a>
+            </Link>
         </div>
+        {!isAuthenticated && (
+        <div className="font-bold">
+            <Link href='/auth'>
+            Sign Up
+            </Link>
+        </div>)
+        }
+        {isAuthenticated && (
         <div className="flex items-center">
             <div className="flex items-center ms-3">
                 <div>
@@ -60,22 +70,13 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
                 </div>
                 <div className="z-50 hidden my-4 text-base list-none bg-white divide-y divide-gray-100 rounded shadow dark:bg-gray-700 dark:divide-gray-600" id="dropdown-user">
                 <div className="px-4 py-3" role="none">
-                    <p className="text-sm text-gray-900 dark:text-white" role="none">
-                    Neil Sims
-                    </p>
                     <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-300" role="none">
-                    neil.sims@flowbite.com
+                    email@example.com
                     </p>
                 </div>
                 <ul className="py-1" role="none">
                     <li>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white" role="menuitem">Dashboard</a>
-                    </li>
-                    <li>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white" role="menuitem">Settings</a>
-                    </li>
-                    <li>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white" role="menuitem">Earnings</a>
+                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white" role="menuitem">Profile</a>
                     </li>
                     <li>
                     <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white" role="menuitem">Sign out</a>
@@ -83,7 +84,7 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
                 </ul>
                 </div>
             </div>
-            </div>
+            </div>)}
         </div>
     </div>
     </nav>
@@ -171,17 +172,11 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
     </div>
     <div className="p-4 sm:ml-64 dark:bg-gray-800 dark:text-white">
     <div className="p-4 rounded-lg dark:border-gray-700 mt-14">
-        {/* Grid layout with a 60/40 split */}
         <div className="grid grid-cols-12 gap-4 mb-4">
-        {/* Left column - 100% width on small screens, 60% width on larger screens */}
-        <div className="col-span-12 md:col-span-8">
-            {/* Content for the left section */}
-            {children}
-        </div>
-        
-        {/* Right column - 100% width on small screens, 40% width on larger screens */}
+        <div className="col-span-10  custom:col-span-8">
+        {children}
+        </div>      
         <div className="col-span-12 md:col-span-4">
-            {/* Additional content for the right section */}
         </div>
         </div>
     </div>
