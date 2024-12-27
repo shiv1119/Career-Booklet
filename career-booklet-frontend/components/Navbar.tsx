@@ -4,17 +4,30 @@ import { FaMoon, FaSun } from 'react-icons/fa';
 import { GoVideo } from 'react-icons/go';
 import { IoBriefcaseSharp, IoSettings } from "react-icons/io5";
 import { MdHelp } from "react-icons/md";
+import { useAuth } from "@/contexts/AuthContext";
+import Link from "next/link";
+import { RiLogoutBoxLine } from "react-icons/ri";  // Added for sign-out icon
+import { BiUser } from "react-icons/bi";  // Added for profile icon
 
 interface NavbarProps {
   children: ReactNode;
 }
 
 const Navbar: React.FC<NavbarProps> = ({ children }) => {
-
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+  const { isAuthenticated, logout } = useAuth(); // Include logout from useAuth
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Dropdown state
 
   const toggleMode = () => {
     setIsDarkMode(!isDarkMode);
+  };
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(prev => !prev);
+  };
+
+  const handleLogout = () => {
+    logout(); // Call logout when the user clicks sign out
   };
 
   useEffect(() => {
@@ -33,65 +46,66 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
       localStorage.setItem('darkMode', 'false');
     }
   }, [isDarkMode]);
-    return <>
-    <div>
 
-    <nav className="fixed top-0 z-50 w-full bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-    <div className="px-3 py-2 lg:px-5 lg:pl-3">
-        <div className="flex items-center justify-between">
-        <div className="flex items-center justify-start rtl:justify-end">
-            <button data-drawer-target="logo-sidebar" data-drawer-toggle="logo-sidebar" aria-controls="logo-sidebar" type="button" className="inline-flex items-center p-2 text-sm text-gray-500 rounded-lg sm:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600">
-                <span className="sr-only">Open sidebar</span>
-                <svg className="w-6 h-6" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                <path clipRule="evenodd" fillRule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"></path>
-                </svg>
-            </button>
-            <a href="https://flowbite.com" className="flex ms-2 md:me-24">
-            <span className="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap dark:text-white">Career Booklet</span>
-            </a>
-        </div>
-        <div className="flex items-center">
-            <div className="flex items-center ms-3">
-                <div>
-                <button type="button" className="flex text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600" aria-expanded="false" data-dropdown-toggle="dropdown-user">
-                    <span className="sr-only">Open user menu</span>
-                    <img className="w-8 h-8 rounded-full" src="https://flowbite.com/docs/images/people/profile-picture-5.jpg" alt="user photo" />
+  return (
+    <>
+      <div>
+        <nav className="fixed top-0 z-50 w-full bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+          <div className="px-3 py-2 lg:px-5 lg:pl-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center justify-start rtl:justify-end">
+                <button data-drawer-target="logo-sidebar" data-drawer-toggle="logo-sidebar" aria-controls="logo-sidebar" type="button" className="inline-flex items-center p-2 text-sm text-gray-500 rounded-lg sm:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600">
+                  <span className="sr-only">Open sidebar</span>
+                  <svg className="w-6 h-6" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path clipRule="evenodd" fillRule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"></path>
+                  </svg>
                 </button>
+                <Link href="/" className="flex ms-2 md:me-24">
+                  <span className="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap dark:text-white">Career Booklet</span>
+                </Link>
+              </div>
+              {!isAuthenticated && (
+                <div className="font-bold dark:text-white">
+                  <Link href='/auth'>Sign Up</Link>
                 </div>
-                <div className="z-50 hidden my-4 text-base list-none bg-white divide-y divide-gray-100 rounded shadow dark:bg-gray-700 dark:divide-gray-600" id="dropdown-user">
-                <div className="px-4 py-3" role="none">
-                    <p className="text-sm text-gray-900 dark:text-white" role="none">
-                    Neil Sims
-                    </p>
-                    <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-300" role="none">
-                    neil.sims@flowbite.com
-                    </p>
+              )}
+              {isAuthenticated && (
+                <div className="flex items-center">
+                  <div className="relative">
+                    <button onClick={toggleDropdown} type="button" className="flex items-center text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600">
+                      <span className="sr-only">Open user menu</span>
+                      <img className="w-8 h-8 rounded-full" src="https://flowbite.com/docs/images/people/profile-picture-5.jpg" alt="user photo" />
+                    </button>
+
+                    {isDropdownOpen && (
+                      <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-lg">
+                        <ul className="py-1 text-sm">
+                          <li>
+                            <Link href="/profile" className="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-600">
+                              <BiUser className="mr-2" />
+                              Profile
+                            </Link>
+                          </li>
+                          <li>
+                            <button onClick={handleLogout} className="flex items-center p-2 w-full hover:bg-gray-100 dark:hover:bg-gray-600">
+                              <RiLogoutBoxLine className="mr-2" />
+                              Sign out
+                            </button>
+                          </li>
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <ul className="py-1" role="none">
-                    <li>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white" role="menuitem">Dashboard</a>
-                    </li>
-                    <li>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white" role="menuitem">Settings</a>
-                    </li>
-                    <li>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white" role="menuitem">Earnings</a>
-                    </li>
-                    <li>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white" role="menuitem">Sign out</a>
-                    </li>
-                </ul>
-                </div>
+              )}
             </div>
-            </div>
-        </div>
-    </div>
-    </nav>
-    </div>
-    <div>
-    <aside id="logo-sidebar" className="fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform -translate-x-full bg-white border-r border-gray-200 sm:translate-x-0 dark:bg-gray-800 dark:border-gray-700" aria-label="Sidebar">
-    <div className="h-full px-3 pb-4 overflow-y-auto bg-white dark:bg-gray-800 text-sm">
-        <ul className="space-y-2 font-medium">
+          </div>
+        </nav>
+      </div>
+      <div>
+        <aside id="logo-sidebar" className="fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform -translate-x-full bg-white border-r border-gray-200 sm:translate-x-0 dark:bg-gray-800 dark:border-gray-700" aria-label="Sidebar">
+          <div className="h-full px-3 pb-4 overflow-y-auto bg-white dark:bg-gray-800 text-sm">
+          <ul className="space-y-2 font-medium">
             <li>
                 <a href="#" className="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
                 <svg className="w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 22 21">
@@ -166,27 +180,22 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
                 </a>
             </li>
         </ul>
-    </div>
-    </aside>
-    </div>
-    <div className="p-4 sm:ml-64 dark:bg-gray-800 dark:text-white">
-    <div className="p-4 rounded-lg dark:border-gray-700 mt-14">
-        {/* Grid layout with a 60/40 split */}
-        <div className="grid grid-cols-12 gap-4 mb-4">
-        {/* Left column - 100% width on small screens, 60% width on larger screens */}
-        <div className="col-span-12 md:col-span-8">
-            {/* Content for the left section */}
-            {children}
+          </div>
+        </aside>
+      </div>
+      <div className="p-4 sm:ml-64 dark:bg-gray-800 dark:text-white">
+        <div className="p-4 rounded-lg dark:border-gray-700 mt-14">
+          <div className="grid grid-cols-12 gap-4 mb-4">
+            <div className="col-span-10  custom:col-span-8">
+              {children}
+            </div>      
+            <div className="col-span-12 md:col-span-4">
+            </div>
+          </div>
         </div>
-        
-        {/* Right column - 100% width on small screens, 40% width on larger screens */}
-        <div className="col-span-12 md:col-span-4">
-            {/* Additional content for the right section */}
-        </div>
-        </div>
-    </div>
-    </div>
+      </div>
+    </>
+  );
+};
 
-    </>;
-    };
-    export default Navbar;
+export default Navbar;

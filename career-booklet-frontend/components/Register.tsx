@@ -1,9 +1,10 @@
-'use client'
-import React from 'react';
+'use client';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaPhoneAlt, FaEnvelope, FaLock } from 'react-icons/fa';
 import PhoneInput from 'react-phone-input-2';  
 import 'react-phone-input-2/lib/style.css'; 
+import { useRouter } from 'next/navigation';
 
 type FormData = {
   email: string;
@@ -13,27 +14,73 @@ type FormData = {
 };
 
 const Register = () => {
+  const router = useRouter();
+  const [errorMessages, setErrorMessages] = useState<string[]>([]);
+
   const {
     register,
     handleSubmit,
     formState: { errors },
     watch,
+    setValue,
   } = useForm<FormData>();
 
-  const onSubmit = (data: FormData) => {
-    console.log(data);
+  const onSubmit = async (data: FormData) => {
+    const payload = {
+      email: data.email,
+      phone_number: data.phone,
+      roles: 'user',
+      password: data.password,
+    };
+
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error:', errorData);
+        setErrorMessages([errorData.message || 'Unable to create user']);
+      } else {
+        const responseData = await response.json();
+        console.log('User created successfully:', responseData);
+        setErrorMessages([]);
+        
+        localStorage.setItem('cb-user-email', data.email);
+
+        router.push('/auth/activation'); 
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setErrorMessages(['An error occurred while creating the user.']);
+    }
   };
 
   return (
     <div className="min-h-screen flex justify-center dark:bg-grey-800">
       <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-sm">
-        
+        {/* Error message box */}
+        {errorMessages.length > 0 && (
+          <div className="bg-red-100 text-red-700 border border-red-300 p-4 mb-4 rounded-md">
+            <ul>
+              {errorMessages.map((message, index) => (
+                <li key={index}>{message}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Email field */}
         <div className="mb-5 flex items-center">
           <div className="w-full">
-            <div className='flex items-center'>
-          <FaEnvelope className="mr-3 mb-2 text-gray-500" />
-            <label htmlFor="email" className="block text-sm font-medium text-gray-900 dark:text-white     mb-2">Email</label>
+            <div className="flex items-center">
+              <FaEnvelope className="mr-3 mb-2 text-gray-500" />
+              <label htmlFor="email" className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Email</label>
             </div>
             <input
               type="email"
@@ -46,48 +93,59 @@ const Register = () => {
           </div>
         </div>
 
+        {/* Phone field */}
         <div className="mb-5 flex items-center">
           <div className="w-full">
-            <div className='flex flex-row items-center'>
-            <FaPhoneAlt className="mr-3 mb-2 text-gray-500 dark:text-white" />
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Phone Number</label>
+            <div className="flex flex-row items-center">
+              <FaPhoneAlt className="mr-3 mb-2 text-gray-500 dark:text-white" />
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Phone Number</label>
             </div>
             <PhoneInput
-            {...register('phone', { required: 'Phone number is required' })}
-            country={'in'}
-            placeholder="Enter phone number"
-            containerClass="dark:text-black bg-gray-800"
-            inputProps={{
-                required:true,
-                className:"pl-12 text-sm bg-white text-black dark:bg-gray-800 dark:text-white text-white border border-gray-600 rounded-lg w-full"
-            }}
+              country={'in'}
+              placeholder="Enter phone number"
+              containerClass="text-black"
+              inputProps={{
+                className: `pl-12 text-sm bg-white text-gray-800 border border-gray-300 rounded-lg w-full 
+                dark:bg-gray-800 dark:text-white dark:border-gray-600
+                `,
+              }}
+              onChange={(value) => setValue('phone', value, { shouldValidate: true })}
             />
             {errors.phone && <p className="text-sm text-red-500">{errors.phone.message}</p>}
           </div>
         </div>
 
+        {/* Password field */}
         <div className="mb-5 flex items-center">
           <div className="w-full">
-            <div className='flex items-center'>
-          <FaLock className="mr-3 mb-2 text-gray-500" />
-            <label htmlFor="password" className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Password</label>
+            <div className="flex items-center">
+              <FaLock className="mr-3 mb-2 text-gray-500" />
+              <label htmlFor="password" className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Password</label>
             </div>
             <input
               type="password"
               id="password"
               className="text-sm bg-gray-50 border border-gray-300 text-gray-900 rounded-lg pl-3 py-2 w-full focus:ring-blue-500 focus:border-blue-500 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder="Your password"
-              {...register('password', { required: 'Password is required', minLength: { value: 6, message: 'Password must be at least 6 characters' } })}
+              {...register('password', {
+                required: 'Password is required',
+                minLength: { value: 6, message: 'Password must be at least 6 characters' },
+                pattern: {
+                  value: /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/, 
+                  message: 'Password must contain at least one capital letter, one number, and one special character',
+                },
+              })}
             />
             {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
           </div>
         </div>
 
+        {/* Confirm Password field */}
         <div className="mb-5 flex items-center">
           <div className="w-full">
-            <div className='flex items-center'>
-          <FaLock className="mr-3 mb-2 text-gray-500" />
-            <label htmlFor="password" className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Password</label>
+            <div className="flex items-center">
+              <FaLock className="mr-3 mb-2 text-gray-500" />
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Confirm Password</label>
             </div>
             <input
               type="password"

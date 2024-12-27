@@ -1,10 +1,11 @@
-'use client'
+'use client';
 import Link from 'next/link';
 import React, { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaPhoneAlt, FaEnvelope, FaLock } from 'react-icons/fa';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
+import { useAuth } from '@/contexts/AuthContext'; // Import the useAuth hook
 
 type FormData = {
   emailOrPhone: string;
@@ -15,17 +16,49 @@ const Login: React.FC = () => {
   const [isOtpLogin, setIsOtpLogin] = useState(false); // State for OTP login
   const [otpSent, setOtpSent] = useState(false); // State for whether OTP is sent
   const inputs = useRef<(HTMLInputElement | null)[]>([]); // Ref to store OTP inputs
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<FormData>();
+  const { register, handleSubmit, formState: { errors }, setError } = useForm<FormData>();
+  const { login } = useAuth(); // Use login function from auth context
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = async (data: FormData) => {
     console.log(data);
+    
     if (isOtpLogin && otpSent) {
       // OTP submission logic here
       console.log('OTP:', inputs.current.map(input => input?.value).join(''));
+    } else {
+      // Login with email/phone and password using query parameters
+      try {
+        const response = await fetch(
+          `http://127.0.0.1:8000/api/auth/login-password?email_or_phone=${data.emailOrPhone}&password=${data.password}`, 
+          {
+            method: 'POST', // Using GET method for query parameters
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (response.ok) {
+          const responseData = await response.json();
+          
+          // Handle success response and extract tokens
+          const { tokens } = responseData; // Extract the tokens from the response
+          login(tokens.access_token, tokens.refresh_token, responseData.tokens.expires_in);
+
+          // Additional user info can be used here, if needed
+          console.log('User logged in:', responseData);
+        } else {
+          const errorData = await response.json();
+          // Handle error response
+          console.error('Login failed:', errorData);
+          setError('emailOrPhone', {
+            type: 'manual',
+            message: errorData.message || 'Invalid credentials',
+          });
+        }
+      } catch (error) {
+        console.error('Error during login request:', error);
+      }
     }
   };
 
