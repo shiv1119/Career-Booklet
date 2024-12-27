@@ -1,11 +1,11 @@
 'use client';
 import Link from 'next/link';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { FaPhoneAlt, FaEnvelope, FaLock } from 'react-icons/fa';
-import PhoneInput from 'react-phone-input-2';
+import { FaEnvelope, FaLock } from 'react-icons/fa';
 import 'react-phone-input-2/lib/style.css';
-import { useAuth } from '@/contexts/AuthContext'; // Import the useAuth hook
+import { useAuth } from '@/contexts/AuthContext'; 
+import { useRouter } from 'next/navigation';
 
 type FormData = {
   emailOrPhone: string;
@@ -13,25 +13,39 @@ type FormData = {
 };
 
 const Login: React.FC = () => {
-  const [isOtpLogin, setIsOtpLogin] = useState(false); // State for OTP login
-  const [otpSent, setOtpSent] = useState(false); // State for whether OTP is sent
-  const inputs = useRef<(HTMLInputElement | null)[]>([]); // Ref to store OTP inputs
+  const [isOtpLogin, setIsOtpLogin] = useState(false); 
+  const [otpSent, setOtpSent] = useState(false); 
+  const [emailOrPhone, setEmailOrPhone] = useState('');  
+  const [countdown, setCountdown] = useState(60);  
+  const inputs = useRef<(HTMLInputElement | null)[]>([]); 
   const { register, handleSubmit, formState: { errors }, setError } = useForm<FormData>();
-  const { login } = useAuth(); // Use login function from auth context
+  const { login } = useAuth(); 
+  const router = useRouter(); 
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown > 0 && otpSent) {
+      timer = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    } else if (countdown === 0) {
+      clearInterval(timer);
+    }
+
+    return () => clearInterval(timer);
+  }, [countdown, otpSent]);
 
   const onSubmit = async (data: FormData) => {
-    console.log(data);
+    setEmailOrPhone(data.emailOrPhone); 
     
     if (isOtpLogin && otpSent) {
-      // OTP submission logic here
-      console.log('OTP:', inputs.current.map(input => input?.value).join(''));
-    } else {
-      // Login with email/phone and password using query parameters
+      const otp = inputs.current.map(input => input?.value).join('');
+      
       try {
         const response = await fetch(
-          `http://127.0.0.1:8000/api/auth/login-password?email_or_phone=${data.emailOrPhone}&password=${data.password}`, 
+          `http://127.0.0.1:8000/api/auth/login-otp?email_or_phone=${data.emailOrPhone}&otp=${otp}`, 
           {
-            method: 'POST', // Using GET method for query parameters
+            method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
@@ -40,16 +54,47 @@ const Login: React.FC = () => {
 
         if (response.ok) {
           const responseData = await response.json();
-          
-          // Handle success response and extract tokens
-          const { tokens } = responseData; // Extract the tokens from the response
+          const { tokens } = responseData;
           login(tokens.access_token, tokens.refresh_token, responseData.tokens.expires_in);
 
-          // Additional user info can be used here, if needed
+          router.push('/');
           console.log('User logged in:', responseData);
         } else {
           const errorData = await response.json();
-          // Handle error response
+          console.error('OTP verification failed:', errorData);
+          setError('emailOrPhone', {
+            type: 'manual',
+            message: errorData.message || 'Invalid OTP',
+          });
+        }
+      } catch (error) {
+        console.error('Error during OTP verification request:', error);
+      }
+    } else if (!isOtpLogin) {
+      try {
+        const response = await fetch(
+          `http://127.0.0.1:8000/api/auth/login-password`, 
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email_or_phone: data.emailOrPhone,
+              password: data.password,
+            }),
+          }
+        );
+
+        if (response.ok) {
+          const responseData = await response.json();
+          router.push('/');
+          const { tokens } = responseData;
+          login(tokens.access_token, tokens.refresh_token, responseData.tokens.expires_in);
+
+          console.log('User logged in:', responseData);
+        } else {
+          const errorData = await response.json();
           console.error('Login failed:', errorData);
           setError('emailOrPhone', {
             type: 'manual',
@@ -59,33 +104,61 @@ const Login: React.FC = () => {
       } catch (error) {
         console.error('Error during login request:', error);
       }
+    } else {
+      handleSendOtp(data);
     }
   };
 
   const handleInputChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.value && index < inputs.current.length - 1) {
-      // Move to the next input if it's not the last one
       inputs.current[index + 1]?.focus();
     }
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace' && index > 0 && !e.currentTarget.value) {
-      // Move to the previous input on Backspace if the current input is empty
       inputs.current[index - 1]?.focus();
     }
   };
 
-  const handleSendOtp = () => {
-    // Logic to send OTP here
-    setOtpSent(true);
+  const handleSendOtp = async (data: FormData) => {  
+    setEmailOrPhone(data.emailOrPhone); 
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/api/auth/send-otp?email_or_phone=${data.emailOrPhone}&purpose=login`,
+        {
+          method: 'POST',
+        }
+      );
+
+      if (response.ok) {
+        setOtpSent(true);
+        setCountdown(60);  
+        console.log('OTP sent to:', emailOrPhone);
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to send OTP:', errorData);
+        setError('emailOrPhone', {
+          type: 'manual',
+          message: errorData.message || 'Failed to send OTP',
+        });
+      }
+    } catch (error) {
+      console.error('Error during OTP sending request:', error);
+    }
+  };
+
+  const handleResendOtp = () => {
+    if (countdown === 0) {
+      handleSendOtp({ emailOrPhone });  
+    }
   };
 
   return (
     <div className="min-h-screen flex justify-center dark:bg-grey-800">
       <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-sm">
         
-        {/* Email or Phone field */}
+        {errors.emailOrPhone && <p className="text-sm mb-2 text-red-500">{errors.emailOrPhone.message}</p>}
         <div className="mb-5 flex items-center">
           <div className="w-full">
             <div className='flex items-center'>
@@ -97,13 +170,11 @@ const Login: React.FC = () => {
               id="emailOrPhone"
               className="text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 text-gray-900 rounded-lg pl-3 py-2 w-full focus:ring-blue-500 focus:border-blue-500 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder="name@flowbite.com or +91 1234567890"
-              {...register('emailOrPhone', { required: 'Email or Phone is required' })}
+              {...register('emailOrPhone', { required: 'Email or Phone is required' })} 
             />
-            {errors.emailOrPhone && <p className="text-sm text-red-500">{errors.emailOrPhone.message}</p>}
           </div>
         </div>
 
-        {/* Password field */}
         {!isOtpLogin && (
           <div className="mb-5 flex items-center">
             <div className="w-full">
@@ -126,9 +197,6 @@ const Login: React.FC = () => {
           </div>
         )}
 
-        {/* OTP Login Toggle */}
-
-        {/* OTP Input Fields */}
         {isOtpLogin && otpSent && (
           <div className="mb-5 flex items-center">
             <div className="w-full">
@@ -152,15 +220,21 @@ const Login: React.FC = () => {
               <p id="helper-text-explanation" className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 Please enter the 6-digit code we sent via email or SMS.
               </p>
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={countdown > 0}
+                className="text-sm text-blue-500 mt-2"
+              >
+                {countdown > 0 ? `Resend OTP (${countdown}s)` : 'Resend OTP'}
+              </button>
             </div>
           </div>
         )}
 
-        {/* Submit Button */}
         <button
           type="submit"
           className="text-sm w-full bg-blue-600 text-white py-2.5 px-5 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50"
-          onClick={isOtpLogin && !otpSent ? handleSendOtp : undefined}
         >
           {isOtpLogin ? (otpSent ? 'Submit OTP' : 'Send OTP') : 'Login'}
         </button>

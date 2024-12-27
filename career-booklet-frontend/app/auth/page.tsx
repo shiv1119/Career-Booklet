@@ -1,15 +1,25 @@
 'use client'
-import React, { useState } from "react";
-import { Register } from "@/components"; // Import Register component
+import React, { useState, useEffect } from "react";
+import { Register } from "@/components"; 
 import { Login } from "@/components";
-import { FaSignInAlt, FaUserPlus } from "react-icons/fa"; // Import React Icons
+import { FaSignInAlt, FaUserPlus } from "react-icons/fa"; 
 
 export default function Auth() {
-  const [isRegister, setIsRegister] = useState(false); // State to toggle between Register and Login
+  const [isRegister, setIsRegister] = useState(false); 
+
+  useEffect(() => {
+    const storedState = localStorage.getItem('authPageState');
+    if (storedState) {
+      setIsRegister(JSON.parse(storedState)); 
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('authPageState', JSON.stringify(isRegister));
+  }, [isRegister]);
 
   return (
     <div className="p-6 flex flex-col items-center">
-      {/* Button Group */}
       <div className="flex gap-4 mb-6">
         <button
           onClick={() => setIsRegister(false)}

@@ -6,8 +6,8 @@ import { IoBriefcaseSharp, IoSettings } from "react-icons/io5";
 import { MdHelp } from "react-icons/md";
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
-import { RiLogoutBoxLine } from "react-icons/ri";  // Added for sign-out icon
-import { BiUser } from "react-icons/bi";  // Added for profile icon
+import { RiLogoutBoxLine } from "react-icons/ri";  
+import { BiUser } from "react-icons/bi"; 
 
 interface NavbarProps {
   children: ReactNode;
@@ -15,9 +15,10 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
-  const { isAuthenticated, logout } = useAuth(); // Include logout from useAuth
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Dropdown state
+  const { isAuthenticated, logout , loading } = useAuth(); 
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false); 
 
+  
   const toggleMode = () => {
     setIsDarkMode(!isDarkMode);
   };
@@ -27,7 +28,7 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
   };
 
   const handleLogout = () => {
-    logout(); // Call logout when the user clicks sign out
+    logout();
   };
 
   useEffect(() => {
@@ -64,6 +65,7 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
                   <span className="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap dark:text-white">Career Booklet</span>
                 </Link>
               </div>
+              {!loading && <>
               {!isAuthenticated && (
                 <div className="font-bold dark:text-white">
                   <Link href='/auth'>Sign Up</Link>
@@ -97,7 +99,7 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
                     )}
                   </div>
                 </div>
-              )}
+              )} </>}
             </div>
           </div>
         </nav>
