@@ -15,7 +15,7 @@ REFRESH_TOKEN_EXPIRE_MINUTES = 1440
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-oauth2_bearer = OAuth2PasswordBearer(tokenUrl="auth/token")
+oauth2_bearer = OAuth2PasswordBearer(tokenUrl="/api/auth/login-password")
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
