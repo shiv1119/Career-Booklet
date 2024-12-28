@@ -140,13 +140,11 @@ def generate_tokens(user: User) -> AuthResponse:
         refresh_token=create_refresh_token(user_data),
         token_type="bearer"
     )
-
     return AuthResponse(**user_data, tokens=tokens)
 
 
-
 @router.post("/auth/login-password", response_model=Union[AuthResponse, OTPResponse], status_code=status.HTTP_200_OK)
-def login_with_password(login_request: LoginRequest, db: db_dependency, response: Response):
+async def login_with_password(login_request: LoginRequest, db: db_dependency, response: Response):
     email_or_phone = login_request.email_or_phone
     password = login_request.password
     user = db.query(User).filter(
@@ -221,7 +219,7 @@ def verify_otp(user_id: id, otp: str, db: Session):
 
 
 @router.post("/auth/login-otp", response_model=AuthResponse, status_code=status.HTTP_200_OK)
-def login_with_otp(email_or_phone: str, otp: str, db: db_dependency, response: Response):
+async def login_with_otp(email_or_phone: str, otp: str, db: db_dependency, response: Response):
     user = db.query(User).filter(
         (User.email == email_or_phone) | (User.phone_number == email_or_phone)
     ).first()
@@ -272,7 +270,7 @@ def login_with_otp(email_or_phone: str, otp: str, db: db_dependency, response: R
 
 
 @router.post("/auth/send-otp", status_code=status.HTTP_200_OK)
-def send_otp(email_or_phone: str, purpose: str, db: db_dependency):
+async def send_otp(email_or_phone: str, purpose: str, db: db_dependency):
     user = db.query(User).filter(
         (User.email == email_or_phone) | (User.phone_number == email_or_phone)
     ).first()
@@ -327,7 +325,7 @@ def send_otp(email_or_phone: str, purpose: str, db: db_dependency):
 
 
 @router.post("/auth/refresh-token")
-def refresh_token_view(refresh_token: RefreshTokenRequest):
+async def refresh_token_view(refresh_token: RefreshTokenRequest):
     new_access_token= refresh_access_token(refresh_token.refresh_token)
     response = JSONResponse(content={"message": "Token refreshed"})
     response.set_cookie(
@@ -343,7 +341,7 @@ def refresh_token_view(refresh_token: RefreshTokenRequest):
 
 
 @router.post("/auth/reset-password", status_code=status.HTTP_200_OK)
-def reset_password(user_id: int, otp: str, new_password: str, db: db_dependency):
+async def reset_password(user_id: int, otp: str, new_password: str, db: db_dependency):
     user = db.query(User).filter(
         (User.id == user_id)
     ).first()
@@ -362,7 +360,7 @@ def reset_password(user_id: int, otp: str, new_password: str, db: db_dependency)
     return {"message": "Password has been successfully reset."}
 
 @router.post("/auth/update-phone-number", status_code=status.HTTP_200_OK)
-def update_phone_number(user_id: int, otp: str, new_phone_number: str, db: db_dependency):
+async def update_phone_number(user_id: int, otp: str, new_phone_number: str, db: db_dependency):
     user = db.query(User).filter(
         User.id == user_id
     ).first()
@@ -381,7 +379,7 @@ def update_phone_number(user_id: int, otp: str, new_phone_number: str, db: db_de
     return {"message": "Phone number has been successfully updated."}
 
 @router.post("/auth/deactivate-account", status_code=status.HTTP_200_OK)
-def deactivate_account(user_id: int, otp: str, db: db_dependency):
+async def deactivate_account(user_id: int, otp: str, db: db_dependency):
 
     user = db.query(User).filter(
         User.id==user_id
@@ -406,7 +404,7 @@ def deactivate_account(user_id: int, otp: str, db: db_dependency):
 
 
 @router.post("/auth/recover-account", status_code=status.HTTP_200_OK)
-def recover_account(email: str, otp: str, db: db_dependency, response: Response):
+async def recover_account(email: str, otp: str, db: db_dependency, response: Response):
     user = db.query(User).filter(User.email == email).first()
 
     if not user:
@@ -449,7 +447,7 @@ def recover_account(email: str, otp: str, db: db_dependency, response: Response)
 
 
 @router.delete("/auth/delete-account", status_code=status.HTTP_200_OK)
-def delete_account(user_id: int, otp: str, db: db_dependency):
+async def delete_account(user_id: int, otp: str, db: db_dependency):
     user = db.query(User).filter(User.id == user_id).first()
 
     if not user:
@@ -467,7 +465,7 @@ def delete_account(user_id: int, otp: str, db: db_dependency):
 
 
 @router.post("/auth/enable-mfa", status_code=status.HTTP_200_OK)
-def enable_mfa(user_id: int, enable: bool, db: db_dependency):
+async def enable_mfa(user_id: int, enable: bool, db: db_dependency):
     user = db.query(User).filter(User.id == user_id).first()
 
     if not user:
@@ -481,7 +479,7 @@ def enable_mfa(user_id: int, enable: bool, db: db_dependency):
 
     user.is_multi_factor = enable
     db.commit()
-
+    logout()
     status_message = "enabled" if enable else "disabled"
     return {"message": f"Multi-factor authentication {status_message}."}
 

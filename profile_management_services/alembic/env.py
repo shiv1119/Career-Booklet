@@ -7,15 +7,13 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.core.database import Base
-from app.models import user
-
+from app.models import profile
 config = context.config
-
 fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
 
-VERSION_TABLE = "alembic_version_auth_service"
+VERSION_TABLE = "alembic_version_profile_service"
 
 
 def run_migrations_offline():
