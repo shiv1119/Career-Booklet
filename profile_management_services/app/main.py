@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.core.database import Base, engine
-from app.routers import user
+from app.routers import profile
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -21,7 +21,4 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
-app.include_router(user.router, prefix="/api", tags=["users"])
-
-
-
+app.include_router(profile.router, prefix="/api", tags=["profile"])
