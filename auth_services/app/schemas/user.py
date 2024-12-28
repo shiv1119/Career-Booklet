@@ -13,7 +13,6 @@ class UserCreate(UserBase):
 
 class UserOut(UserBase):
     id: int
-    is_active: bool
 
     class Config:
         from_attributes = True
@@ -36,3 +35,11 @@ class RefreshTokenRequest(BaseModel):
 class LoginRequest(BaseModel):
     email_or_phone: str
     password: str
+
+class OTPResponse(BaseModel):
+    message: str
+
+class EmailCheckRequest(BaseModel):
+    email: str
+
+
