@@ -8,6 +8,7 @@ app = FastAPI()
 allowed_origins = [
     "http://localhost:3000",
     "https://your-production-domain.com",
+    "http://127.0.0.1:9002",
 ]
 
 

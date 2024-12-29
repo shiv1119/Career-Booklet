@@ -7,7 +7,8 @@ import { MdHelp } from "react-icons/md";
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { RiLogoutBoxLine } from "react-icons/ri";  
-import { BiUser } from "react-icons/bi"; 
+import { BiUser } from "react-icons/bi";
+import { FiBell, FiMessageSquare } from 'react-icons/fi';
 
 interface NavbarProps {
   children: ReactNode;
@@ -65,15 +66,24 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
                   <span className="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap dark:text-white">Career Booklet</span>
                 </Link>
               </div>
+
               {!loading && <>
               {!isAuthenticated && (
-                <div className="font-bold dark:text-white">
+                <div className=" dark:text-white">
                   <Link href='/auth'>Sign Up</Link>
                 </div>
               )}
               {isAuthenticated && (
-                <div className="flex items-center">
-                  <div className="relative">
+                <div className="flex items-center space-x-0">
+                  <button className="relative p-2 rounded-full text-gray-400 hover:text-gray-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600">
+                    <FiMessageSquare size={20} />
+                    <span className="sr-only">Messages</span>
+                  </button>
+                  <button className="relative p-2 rounded-full text-gray-400 hover:text-gray-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600">
+                    <FiBell size={20} />
+                    <span className="sr-only">Notifications</span>
+                  </button>
+                  <div className="relative pl-2">
                     <button onClick={toggleDropdown} type="button" className="flex items-center text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600">
                       <span className="sr-only">Open user menu</span>
                       <img className="w-8 h-8 rounded-full" src="https://flowbite.com/docs/images/people/profile-picture-5.jpg" alt="user photo" />
