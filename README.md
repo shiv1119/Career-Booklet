@@ -7,9 +7,9 @@ alembic upgrade head
 uvicorn app.main:app --reload
 
 # run all services 
-1) auth services - uvicorn app.main:app --host 127.0.0.1 --port 9000
-2) profile management services - uvicorn app.main:app --host 127.0.0.1 --port 9001
-3) api gateway - uvicorn app.main:app --host 127.0.0.1 --port 9002
+1) auth services - uvicorn app.main:app --host 127.0.0.1 --port 9000 --reload
+2) profile management services - uvicorn app.main:app --host 127.0.0.1 --port 9001 --reload
+3) api gateway - uvicorn app.main:app --host 127.0.0.1 --port 9002 --reload
 
 
 
