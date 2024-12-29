@@ -43,3 +43,11 @@ class EmailCheckRequest(BaseModel):
     email: str
 
 
+class TokenValidationRequest(BaseModel):
+    token: str
+
+class RecoverAccountRequest(BaseModel):
+    email: str
+    otp: str
+
+

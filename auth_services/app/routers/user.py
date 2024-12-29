@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from app.models.user import User
 from typing import Annotated, Union
-from app.schemas.user import UserCreate, UserOut,UserActivate, AuthResponse, TokenOut, RefreshTokenRequest, LoginRequest, OTPResponse, EmailCheckRequest
+from app.schemas.user import UserCreate, UserOut,UserActivate, AuthResponse, TokenOut, RefreshTokenRequest, LoginRequest, OTPResponse, EmailCheckRequest, TokenValidationRequest, RecoverAccountRequest
 from app.utils.helpers import generate_otp, mask_email, generate_unique_old_email
-from app.auth.jwt import create_access_token, create_refresh_token, verify_password, hash_password, get_current_user, refresh_access_token, oauth2_bearer
+from app.auth.jwt import create_access_token, create_refresh_token, verify_password, hash_password, get_current_user, refresh_access_token, oauth2_bearer, verify_token
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.sql import func
 from fastapi.responses import JSONResponse
@@ -164,8 +164,11 @@ async def login_with_password(login_request: LoginRequest, db: db_dependency, re
         raise HTTPException(status_code=400, detail="Invalid credentials")
 
     if user.is_multi_factor:
-        send_otp(user.email, "multi_factor_login", db)
-        return {"message": "OTP sent. Please verify the OTP to complete login."}
+        await send_otp(user.email, "multi_factor_login", db)
+        return JSONResponse(content={
+            "message": "This otp send for multi-factor verification",
+            "multi-factor": True
+        })
 
     generated_tokens = generate_tokens(user)
     access_token = generated_tokens.tokens.access_token
@@ -404,13 +407,13 @@ async def deactivate_account(user_id: int, otp: str, db: db_dependency):
 
 
 @router.post("/auth/recover-account", status_code=status.HTTP_200_OK)
-async def recover_account(email: str, otp: str, db: db_dependency, response: Response):
-    user = db.query(User).filter(User.email == email).first()
+async def recover_account(recover_request: RecoverAccountRequest, db: db_dependency, response: Response):
+    user = db.query(User).filter(User.email == recover_request.email).first()
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    if not verify_otp(user.id, otp, db):
+    if not verify_otp(user.id, recover_request.otp, db):
         raise HTTPException(status_code=400, detail="Invalid OTP for delete account")
     
     user.is_active = True
@@ -479,7 +482,6 @@ async def enable_mfa(user_id: int, enable: bool, db: db_dependency):
 
     user.is_multi_factor = enable
     db.commit()
-    logout()
     status_message = "enabled" if enable else "disabled"
     return {"message": f"Multi-factor authentication {status_message}."}
 
@@ -495,24 +497,23 @@ async def logout(response: Response):
 @router.post("/check-user", status_code=status.HTTP_200_OK)
 async def check_user(email_data: EmailCheckRequest, db: db_dependency):
     user = db.query(User).filter(User.email == email_data.email).first()
-    if user and not user.is_active:
-        return {
-            "message": "This email already exists, but the account is not activated",
-            "exists": True,
-            "activated": False
-        }
-
     if user and user.deleted_at:
         return {
             "message": "Account exists. Do you want to recover?",
             "exists": True,
             "deleted": True
         }
-
+    if user and not user.is_active:
+        return {
+            "message": "This email already exists, but the account is not activated",
+            "exists": True,
+            "activated": False
+        }
     if user:
         return {
             "message": "Account exists with this email.",
-            "exists": True
+            "exists": True,
+            "activated": True
         }
 
     return {
@@ -520,6 +521,16 @@ async def check_user(email_data: EmailCheckRequest, db: db_dependency):
         "exists": False
     }
 
+
+@router.post("/validate-token")
+async def validate_token(request: TokenValidationRequest, db:db_dependency):
+    payload = verify_token(request.token)
+    user_id = payload.get("id")
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user_id or not user:
+        raise HTTPException(status_code=401, detail="Invalid token or user not found.")
+
+    return {"user_id": user_id}
 
 
 

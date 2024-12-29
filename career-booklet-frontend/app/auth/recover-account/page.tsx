@@ -7,24 +7,17 @@ import { useRouter, useSearchParams } from 'next/navigation';
 const Activation: React.FC = () => {
   const { login } = useAuth();
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
-  const [otp, setOtp] = useState<string>(''); 
-  const [showOtpFields, setShowOtpFields] = useState<boolean>(false); 
-  const [emailOrPhone, setEmailOrPhone] = useState<string>(''); 
-  const [isResending, setIsResending] = useState<boolean>(false); 
+  const [otp, setOtp] = useState<string>('');
+  const [showOtpFields, setShowOtpFields] = useState<boolean>(false);
+  const [emailOrPhone, setEmailOrPhone] = useState<string>('');
+  const [isResending, setIsResending] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [message, setMessage] = useState<{ text: string; type: 'error' | 'success' } | null>(null); 
+  const [message, setMessage] = useState<{ text: string; type: 'error' | 'success' } | null>(null);
   const [timer, setTimer] = useState<number>(0);
   const [activationSuccess, setActivationSuccess] = useState<boolean>(false);
   const [countdown, setCountdown] = useState<number>(3);
   const searchParams = useSearchParams();
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.replace('/');
-    }
-  }, [isAuthenticated, router])
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -33,22 +26,14 @@ const Activation: React.FC = () => {
         setCountdown((prev) => {
           if (prev <= 1) {
             clearInterval(interval);
-            router.push('/'); 
+            router.push('/');
           }
           return prev - 1;
         });
       }, 1000);
     }
-    return () => clearInterval(interval); 
+    return () => clearInterval(interval);
   }, [activationSuccess, countdown, router]);
-
-
-useEffect(() => {
-    const queryEmail = searchParams.get("email");
-    if (queryEmail) {
-      setEmailOrPhone(queryEmail);
-    }
-  }, [searchParams]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -57,14 +42,21 @@ useEffect(() => {
         setTimer((prev) => prev - 1);
       }, 1000);
     }
-    return () => clearInterval(interval); 
+    return () => clearInterval(interval);
   }, [timer]);
+
+    useEffect(() => {
+    const queryEmail = searchParams.get("email");
+    if (queryEmail) {
+      setEmailOrPhone(queryEmail);
+    }
+  }, [searchParams]);
 
   const handleInputChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.value && index < inputs.current.length - 1) {
       inputs.current[index + 1]?.focus();
     }
-    setOtp(inputs.current.map(input => input?.value).join('')); 
+    setOtp(inputs.current.map(input => input?.value).join(''));
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -74,16 +66,16 @@ useEffect(() => {
   };
 
   const handleSendOtp = async () => {
-    setMessage(null); 
+    setMessage(null);
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/api/auth/send-otp?email_or_phone=${encodeURIComponent(emailOrPhone)}&purpose=activation`,
+        `http://127.0.0.1:8000/api/auth/send-otp?email_or_phone=${encodeURIComponent(emailOrPhone)}&purpose=recover_account`,
         { method: 'POST' }
       );
 
       if (response.ok) {
         setMessage({ text: 'OTP sent successfully!', type: 'success' });
-        setShowOtpFields(true); 
+        setShowOtpFields(true);
         setTimer(60); // Start timer
       } else {
         const errorData = await response.json();
@@ -99,7 +91,7 @@ useEffect(() => {
     setIsSubmitting(true);
     setMessage(null);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/user/activate', {
+      const response = await fetch('http://127.0.0.1:8000/api/auth/recover-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailOrPhone, otp }),
@@ -109,8 +101,8 @@ useEffect(() => {
 
       if (response.ok) {
         setMessage({ text: 'Account activated successfully!', type: 'success' });
-        setActivationSuccess(true); 
-        setShowOtpFields(false); 
+        setActivationSuccess(true);
+        setShowOtpFields(false);
 
         login(responseData.tokens.access_token, responseData.tokens.refresh_token);
         console.log('Tokens saved:', responseData.tokens);
@@ -136,7 +128,7 @@ useEffect(() => {
 
       if (response.ok) {
         setMessage({ text: 'OTP resent successfully!', type: 'success' });
-        setTimer(60); // Reset timer
+        setTimer(60);
       } else {
         const errorData = await response.json();
         setMessage({ text: errorData.detail || 'Failed to resend OTP. Please try again.', type: 'error' });
@@ -153,7 +145,7 @@ useEffect(() => {
     <div className="min-h-screen">
       {!activationSuccess ? (
         <form className="max-w-sm mx-auto">
-          <div className="text-xl font-bold mb-6">Account Activation</div>
+          <div className="text-xl font-bold mb-6">Recover Your Account</div>
 
           {message && (
             <div
@@ -172,7 +164,7 @@ useEffect(() => {
                   htmlFor="email"
                   className="block text-sm font-medium text-gray-900 dark:text-white mb-2"
                 >
-                  Email or Phone
+                  Email
                 </label>
               </div>
               <input
@@ -181,7 +173,7 @@ useEffect(() => {
                 value={emailOrPhone}
                 onChange={(e) => setEmailOrPhone(e.target.value)}
                 className="text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 text-gray-900 rounded-lg pl-3 py-2 w-full focus:ring-blue-500 focus:border-blue-500 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                placeholder="Enter email or phone"
+                placeholder="Enter email"
               />
             </div>
           </div>
@@ -247,7 +239,7 @@ useEffect(() => {
         </form>
       ) : (
         <div className="text-center">
-          <div className="text-xl font-bold mb-6">Account Activated</div>
+          <div className="text-xl font-bold mb-6">Account Recovered</div>
           <p>Redirecting to Home in <span className="font-bold">{countdown}</span> seconds...</p>
         </div>
       )}

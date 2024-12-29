@@ -26,7 +26,7 @@ db_dependency = Annotated[Session, Depends(get_db)]
 async def hello():
     return {"message": "hello world"}
 
-@router.post("/profiles/", status_code=status.HTTP_201_CREATED)
+@router.post("/profile/", status_code=status.HTTP_201_CREATED)
 async def create_user_profile(
     db: db_dependency,
     user_data: UserProfileCreateRequest = Depends(UserProfileCreateRequest.as_form),

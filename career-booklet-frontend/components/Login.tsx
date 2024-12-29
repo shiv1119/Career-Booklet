@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaEnvelope, FaLock } from 'react-icons/fa';
 import 'react-phone-input-2/lib/style.css';
-import { useAuth } from '@/contexts/AuthContext'; 
+import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
 type FormData = {
@@ -13,14 +13,14 @@ type FormData = {
 };
 
 const Login: React.FC = () => {
-  const [isOtpLogin, setIsOtpLogin] = useState(false); 
-  const [otpSent, setOtpSent] = useState(false); 
-  const [emailOrPhone, setEmailOrPhone] = useState('');  
-  const [countdown, setCountdown] = useState(60);  
-  const inputs = useRef<(HTMLInputElement | null)[]>([]); 
+  const [isOtpLogin, setIsOtpLogin] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [emailOrPhone, setEmailOrPhone] = useState('');
+  const [countdown, setCountdown] = useState(60);
+  const inputs = useRef<(HTMLInputElement | null)[]>([]);
   const { register, handleSubmit, formState: { errors }, setError } = useForm<FormData>();
-  const { login } = useAuth(); 
-  const router = useRouter(); 
+  const { login } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -36,14 +36,14 @@ const Login: React.FC = () => {
   }, [countdown, otpSent]);
 
   const onSubmit = async (data: FormData) => {
-    setEmailOrPhone(data.emailOrPhone); 
-    
+    setEmailOrPhone(data.emailOrPhone);
+
     if (isOtpLogin && otpSent) {
       const otp = inputs.current.map(input => input?.value).join('');
-      
+
       try {
         const response = await fetch(
-          `http://127.0.0.1:8000/api/auth/login-otp?email_or_phone=${data.emailOrPhone}&otp=${otp}`, 
+          `http://127.0.0.1:8000/api/auth/login-otp?email_or_phone=${data.emailOrPhone}&otp=${otp}`,
           {
             method: 'POST',
             headers: {
@@ -56,7 +56,6 @@ const Login: React.FC = () => {
           const responseData = await response.json();
           const { tokens } = responseData;
           login(tokens.access_token, tokens.refresh_token, responseData.tokens.expires_in);
-
           router.push('/');
           console.log('User logged in:', responseData);
         } else {
@@ -73,7 +72,7 @@ const Login: React.FC = () => {
     } else if (!isOtpLogin) {
       try {
         const response = await fetch(
-          `http://127.0.0.1:8000/api/auth/login-password`, 
+          `http://127.0.0.1:8000/api/auth/login-password`,
           {
             method: 'POST',
             headers: {
@@ -88,11 +87,15 @@ const Login: React.FC = () => {
 
         if (response.ok) {
           const responseData = await response.json();
-          router.push('/');
-          const { tokens } = responseData;
-          login(tokens.access_token, tokens.refresh_token, responseData.tokens.expires_in);
+          if (responseData["multi-factor"]) {
+                router.push(`auth/multifactor-otp-verification?email=${encodeURIComponent(data.emailOrPhone)}`)
+          } else {
+              router.push('/');
+              const { tokens } = responseData;
+              login(tokens.access_token, tokens.refresh_token, responseData.tokens.expires_in);
 
-          console.log('User logged in:', responseData);
+              console.log('User logged in:', responseData);
+           }
         } else {
           const errorData = await response.json();
           console.error('Login failed:', errorData);
@@ -121,8 +124,8 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleSendOtp = async (data: FormData) => {  
-    setEmailOrPhone(data.emailOrPhone); 
+  const handleSendOtp = async (data: FormData) => {
+    setEmailOrPhone(data.emailOrPhone);
     try {
       const response = await fetch(
         `http://127.0.0.1:8000/api/auth/send-otp?email_or_phone=${data.emailOrPhone}&purpose=login`,
@@ -133,7 +136,7 @@ const Login: React.FC = () => {
 
       if (response.ok) {
         setOtpSent(true);
-        setCountdown(60);  
+        setCountdown(60);
         console.log('OTP sent to:', emailOrPhone);
       } else {
         const errorData = await response.json();
@@ -150,14 +153,14 @@ const Login: React.FC = () => {
 
   const handleResendOtp = () => {
     if (countdown === 0) {
-      handleSendOtp({ emailOrPhone });  
+      handleSendOtp({ emailOrPhone });
     }
   };
 
   return (
     <div className="min-h-screen flex justify-center dark:bg-grey-800">
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-sm">
-        
+      <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 p-8 w-full max-w-sm">
+
         {errors.emailOrPhone && <p className="text-sm mb-2 text-red-500">{errors.emailOrPhone.message}</p>}
         <div className="mb-5 flex items-center">
           <div className="w-full">
@@ -170,7 +173,7 @@ const Login: React.FC = () => {
               id="emailOrPhone"
               className="text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 text-gray-900 rounded-lg pl-3 py-2 w-full focus:ring-blue-500 focus:border-blue-500 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder="name@flowbite.com or +91 1234567890"
-              {...register('emailOrPhone', { required: 'Email or Phone is required' })} 
+              {...register('emailOrPhone', { required: 'Email or Phone is required' })}
             />
           </div>
         </div>
@@ -188,7 +191,7 @@ const Login: React.FC = () => {
               <input
                 type="password"
                 id="password"
-                className="text-sm bg-gray-50 border border-gray-300 text-gray-900 rounded-lg pl-3 py-2 w-full focus:ring-blue-500 focus:border-blue-500 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                className="text-sm bg-gray-50 border border-gray-300 text-gray-900 rounded-lg pl-3 py-2 w-full focus:ring-blue-500 focus:border-blue-500 focus:outline-none dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                 placeholder="Your password"
                 {...register('password', { required: 'Password is required' })}
               />
@@ -208,7 +211,7 @@ const Login: React.FC = () => {
                       type="text"
                       maxLength={1}
                       id={`code-${i + 1}`}
-                      className="block w-9 h-9 py-3 text-sm font-extrabold text-center text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                      className="block w-9 h-9 py-3 text-sm text-center text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                       required
                       ref={(el) => (inputs.current[i] = el)}
                       onChange={(e) => handleInputChange(i, e)}

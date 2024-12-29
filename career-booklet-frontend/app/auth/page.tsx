@@ -2,10 +2,19 @@
 import React, { useState, useEffect } from "react";
 import { Register } from "@/components"; 
 import { Login } from "@/components";
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import { FaSignInAlt, FaUserPlus } from "react-icons/fa"; 
 
 export default function Auth() {
-  const [isRegister, setIsRegister] = useState(false); 
+    const { isAuthenticated } = useAuth();
+  const router = useRouter();
+  const [isRegister, setIsRegister] = useState(false);
+    useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/');
+    }
+  }, [isAuthenticated, router]);
 
   useEffect(() => {
     const storedState = localStorage.getItem('authPageState');
