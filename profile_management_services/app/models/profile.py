@@ -21,3 +21,40 @@ class UserProfile(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
+    def to_dict(self):
+        return {
+            "auth_user_id": self.auth_user_id,
+            "full_name": self.full_name,
+            "additional_name": self.additional_name,
+            "pronouns": self.pronouns,
+            "date_of_birth": self.date_of_birth.isoformat() if self.date_of_birth else None,
+            "gender": self.gender,
+            "country": self.country,
+            "city": self.city,
+            "full_address": self.full_address,
+            "website": self.website,
+            "profile_image": self.profile_image,
+            "profile_background_image": self.profile_background_image,
+        }
+
+class AboutUser(Base):
+    __tablename__ = 'about_user'
+
+    id=Column(Integer, primary_key=True, index=True)
+    auth_user_id=Column(Integer, unique=True, nullable=False)
+    about=Column(String(3000), nullable=True)
+
+
+class Skill(Base):
+    __tablename__ = 'skills'
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False)
+
+class UserSkill(Base):
+    __tablename__ = 'user_skills'
+
+    id = Column(Integer, primary_key=True, index=True)
+    auth_user_id = Column(Integer, nullable=False)
+    skill_id = Column(Integer, nullable=False)
+    order = Column(Integer, nullable=False)
