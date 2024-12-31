@@ -138,7 +138,8 @@ def generate_tokens(user: User) -> AuthResponse:
     tokens = TokenOut(
         access_token=create_access_token(user_data),
         refresh_token=create_refresh_token(user_data),
-        token_type="bearer"
+        token_type="bearer",
+        expires_in=3600,
     )
     return AuthResponse(**user_data, tokens=tokens)
 

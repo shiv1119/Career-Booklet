@@ -42,70 +42,19 @@ const Login: React.FC = () => {
       const otp = inputs.current.map(input => input?.value).join('');
 
       try {
-        const response = await fetch(
-          `http://127.0.0.1:8000/api/auth/login-otp?email_or_phone=${data.emailOrPhone}&otp=${otp}`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-
-        if (response.ok) {
-          const responseData = await response.json();
-          const { tokens } = responseData;
-          login(tokens.access_token, tokens.refresh_token, responseData.tokens.expires_in);
-          router.push('/');
-          console.log('User logged in:', responseData);
-        } else {
-          const errorData = await response.json();
-          console.error('OTP verification failed:', errorData);
-          setError('emailOrPhone', {
-            type: 'manual',
-            message: errorData.message || 'Invalid OTP',
-          });
-        }
+        console.log('otp');
       } catch (error) {
         console.error('Error during OTP verification request:', error);
       }
     } else if (!isOtpLogin) {
-      try {
-        const response = await fetch(
-          `http://127.0.0.1:8000/api/auth/login-password`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email_or_phone: data.emailOrPhone,
-              password: data.password,
-            }),
-          }
-        );
-
-        if (response.ok) {
-          const responseData = await response.json();
-          if (responseData["multi-factor"]) {
-                router.push(`auth/multifactor-otp-verification?email=${encodeURIComponent(data.emailOrPhone)}`)
-          } else {
-              router.push('/');
-              const { tokens } = responseData;
-              login(tokens.access_token, tokens.refresh_token, responseData.tokens.expires_in);
-
-              console.log('User logged in:', responseData);
-           }
-        } else {
-          const errorData = await response.json();
-          console.error('Login failed:', errorData);
-          setError('emailOrPhone', {
-            type: 'manual',
-            message: errorData.message || 'Invalid credentials',
-          });
-        }
-      } catch (error) {
-        console.error('Error during login request:', error);
+      try{
+        await login(data.emailOrPhone,data.password);
+        router.push('/');
+      } catch (error: any) {
+        setError('emailOrPhone' ,{
+          type: 'manual',
+          message: errorData.message || 'Login Failed',
+        })
       }
     } else {
       handleSendOtp(data);

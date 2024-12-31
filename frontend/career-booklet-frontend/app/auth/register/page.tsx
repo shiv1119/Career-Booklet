@@ -65,10 +65,10 @@ const Register = () => {
               },
             });
           } else {
-            setErrorMessage("Account exists with this email.");
+            setErrorMessages(["Account exists with this email."]);
           }
         } else {
-          setErrorMessage("");
+          setErrorMessages([]);
         }
     } catch (error) {
       console.error('Error checking email:', error);
