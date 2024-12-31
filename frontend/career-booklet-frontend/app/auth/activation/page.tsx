@@ -1,10 +1,13 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
 import { FaEnvelope } from 'react-icons/fa';
+import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 const Activation: React.FC = () => {
+  const { login } = useAuth();
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
   const [otp, setOtp] = useState<string>(''); 
   const [showOtpFields, setShowOtpFields] = useState<boolean>(false); 
@@ -16,6 +19,12 @@ const Activation: React.FC = () => {
   const [activationSuccess, setActivationSuccess] = useState<boolean>(false);
   const [countdown, setCountdown] = useState<number>(3);
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/');
+    }
+  }, [isAuthenticated, router])
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -102,6 +111,8 @@ useEffect(() => {
         setMessage({ text: 'Account activated successfully!', type: 'success' });
         setActivationSuccess(true); 
         setShowOtpFields(false); 
+
+        login(responseData.tokens.access_token, responseData.tokens.refresh_token);
         console.log('Tokens saved:', responseData.tokens);
       } else {
         setMessage({ text: responseData.detail || 'Activation failed. Please try again.', type: 'error' });
