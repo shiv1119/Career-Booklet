@@ -85,7 +85,7 @@ useEffect(() => {
       if (response.ok) {
         setMessage({ text: 'OTP sent successfully!', type: 'success' });
         setShowOtpFields(true); 
-        setTimer(60); // Start timer
+        setTimer(60); 
       } else {
         const errorData = await response.json();
         setMessage({ text: errorData.detail || 'Failed to send OTP. Please try again.', type: 'error' });

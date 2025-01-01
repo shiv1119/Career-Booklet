@@ -26,15 +26,20 @@ const LoginWithPassword: React.FC = () => {
   
 
   const onSubmit = async (data: FormData) => {
+    const cleanedEmailOrPhone = data.emailOrPhone.replace(/\s+/g, '').split('').join('');
     signIn('credentials', {
-        email_or_phone: data.emailOrPhone,
+        email_or_phone: cleanedEmailOrPhone,
         password: data.password,
         redirect: false,
         callbackUrl: '/',
     }).then((res) => {
         if (res?.error) {
-            setError('emailOrPhone', { message: res.error });
-        } else {
+          if(res?.error === 'MFA Required'){
+            router.push(`/auth/mfa-verification?email=${encodeURIComponent(data.emailOrPhone)}`);
+          } else {
+            setError('emailOrPhone', { message: res?.error });
+          }
+        } else{
             router.push('/');
         }
     });
@@ -43,7 +48,7 @@ const LoginWithPassword: React.FC = () => {
   return (
     <div className="w-full min-h-screen flex justify-center dark:bg-grey-800">
       <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 p-8 w-full max-w-sm">
-        {errors.emailOrPhone && <p className="text-sm mb-2 text-red-500">{errors.emailOrPhone.message}</p>}
+        {errors.emailOrPhone && <div className="mb-4 p-2 text-sm rounded bg-red-100 text-sm mb-2 text-red-700">{errors.emailOrPhone.message}</div>}
         <div className="mb-5 flex items-center">
           <div className="w-full">
             <div className="flex items-center">
@@ -54,7 +59,7 @@ const LoginWithPassword: React.FC = () => {
               type="text"
               id="emailOrPhone"
               className="text-sm dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-300 text-gray-900 rounded-lg pl-3 py-2 w-full focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-              placeholder="name@domain.com or +91 1234567890"
+              placeholder="name@domain.com or 91 1234567890"
               {...register('emailOrPhone', { required: 'Email or Phone is required' })}
             />
           </div>
@@ -66,7 +71,7 @@ const LoginWithPassword: React.FC = () => {
               <FaLock className="mr-3 mb-2 text-gray-500" />
               <div className="flex items-center justify-between w-full">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Password</label>
-                <Link href="/forgot-password" className="text-sm mb-2 text-blue-500 hover:underline">Forget Password?</Link>
+                <Link href="/auth/reset-password" className="text-sm mb-2 text-blue-500 hover:underline">Forget Password?</Link>
               </div>
             </div>
             <input

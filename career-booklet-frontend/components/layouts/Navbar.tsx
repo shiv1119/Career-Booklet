@@ -1,5 +1,4 @@
 'use client'
-import type { Session } from 'next-auth';
 import React, { ReactNode, useEffect, useState } from "react";
 import { FaEnvelope, FaMoon, FaSun } from 'react-icons/fa';
 import { GoVideo } from 'react-icons/go';
@@ -70,7 +69,7 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
               
               {!isLoading && <>
               {!isAuthenticated && (
-                <div className=" dark:text-white">
+                <div className=" dark:text-white hover:font-bold">
                   <Link href='/auth/login-password'>Sign Up</Link>
                 </div>
               )}
@@ -91,10 +90,10 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
                     </button>
 
                     {isDropdownOpen && (
-                      <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-lg">
+                      <div className="absolute right-0 mt-2 w-auto bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-lg">
                         <ul className="py-1 text-sm">
                           <li>
-                            <Link href='/profile' className="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-600">
+                            <Link href='/profile' className="flex  items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-600">
                             <FaEnvelope className="mr-2"/>
                             {session?.user?.email}
                             </Link>
@@ -144,7 +143,7 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
             </li>
             <li>
                 <div className="flex items-center p-2 text-gray-800 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                <GoVideo className="text-xl "/>
+                <GoVideo className="text-xl text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"/>
                 <span className="flex-1 ms-3 whitespace-nowrap">Learning</span>
                 </div>
             </li>
@@ -158,7 +157,7 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
             </li>
             <li>
                 <a href="#" className="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                <IoBriefcaseSharp className="text-xl"/>
+                <IoBriefcaseSharp className="text-xl text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"/>
                 <span className="flex-1 ms-3 whitespace-nowrap">Jobs</span>
                 </a>
             </li>
@@ -174,7 +173,7 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
             </li>
             <li>
                 <a href="#" className="flex items-center p-2 text-gray-900 transition duration-75 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white group">
-                <IoSettings className="text-xl"/>
+                <IoSettings className="text-xl text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"/>
                 <span className="ms-3">Settings</span>
                 </a>
             </li>
@@ -186,7 +185,7 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
                     {isDarkMode ? (
                     <FaSun className="text-yellow-500 text-lg" />
                     ) : (
-                    <FaMoon className="text-gray-800 text-lg" />
+                    <FaMoon className="text-lg text-gray-500 transition duration-75 group-hover:text-gray-900" />
                     )}
                     <span className="ms-3">{isDarkMode ? "Light Mode" : "Dark Mode"}</span>
                 </button>
@@ -194,7 +193,7 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
             </li>
             <li>
                 <a href="#" className="flex items-center p-2 text-gray-900 transition duration-75 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white group">
-                <MdHelp className="text-xl"/>
+                <MdHelp className="text-xl text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"/>
                 <span className="ms-3">Help</span>
                 </a>
             </li>

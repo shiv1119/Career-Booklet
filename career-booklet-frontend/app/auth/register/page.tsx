@@ -203,7 +203,7 @@ import { useSession } from 'next-auth/react';
                 placeholder="Enter phone number"
                 containerClass="text-black"
                 inputProps={{
-                  className: `pl-12 text-sm bg-white text-gray-800 border border-gray-300 rounded-lg w-full
+                  className: `pl-11 text-sm bg-white text-gray-800 border border-gray-300 rounded-lg w-full
                   dark:bg-gray-800 dark:text-white dark:border-gray-600
                   `,
                 }}
