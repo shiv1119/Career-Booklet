@@ -48,7 +48,6 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
       localStorage.setItem('darkMode', 'false');
     }
   }, [isDarkMode]);
-
   const isAuthenticated = status === 'authenticated';
   const isLoading = status === 'loading';
   return (

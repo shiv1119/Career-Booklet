@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from app.models.user import User
 from typing import Annotated, Union
-from app.schemas.user import UserCreate, UserOut,UserActivate, AuthResponse, TokenOut, RefreshTokenRequest, LoginRequest, OTPResponse, EmailCheckRequest, TokenValidationRequest, RecoverAccountRequest
+from app.schemas.user import UserCreate, UserOut,UserActivate, AuthResponse, TokenOut, RefreshTokenRequest, LoginRequest, OTPResponse, EmailCheckRequest, TokenValidationRequest, RecoverAccountRequest, LoginOTPRequest
 from app.utils.helpers import generate_otp, mask_email, generate_unique_old_email
 from app.auth.jwt import create_access_token, create_refresh_token, verify_password, hash_password, get_current_user, refresh_access_token, oauth2_bearer, verify_token
 from datetime import datetime, timezone, timedelta
@@ -223,9 +223,9 @@ def verify_otp(user_id: id, otp: str, db: Session):
 
 
 @router.post("/auth/login-otp", response_model=AuthResponse, status_code=status.HTTP_200_OK)
-async def login_with_otp(email_or_phone: str, otp: str, db: db_dependency, response: Response):
+async def login_with_otp(request:LoginOTPRequest, db: db_dependency, response: Response):
     user = db.query(User).filter(
-        (User.email == email_or_phone) | (User.phone_number == email_or_phone)
+        (User.email == request.email_or_phone) | (User.phone_number == request.email_or_phone)
     ).first()
 
     if not user:
@@ -237,7 +237,7 @@ async def login_with_otp(email_or_phone: str, otp: str, db: db_dependency, respo
     if user.deleted_at:
         raise HTTPException(status_code=400, detail="User account not found")
 
-    if not verify_otp(user.id, otp, db):
+    if not verify_otp(user.id, request.otp, db):
         raise HTTPException(status_code=400, detail="Invalid OTP")
     
     user.otp=None

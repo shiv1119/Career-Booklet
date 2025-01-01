@@ -16,7 +16,7 @@ const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        email_or_phone: { label: "Email", type: "string" },
+        email_or_phone: { label: "Email or Phone", type: "string" },
         password: { label: "Password", type: "string" }
       },
       async authorize(credentials) {
@@ -36,14 +36,43 @@ const authOptions: NextAuthOptions = {
         if (res.ok) {
           return await res.json();
         }
+        return null; 
+      }
+    }),
 
+    CredentialsProvider({
+      name: 'OTP',
+      otp: {
+        email_or_phone: { label: "Email or Phone", type: "string" },
+        otp: { label: "OTP", type: "string" }
+      },
+      async authorize(credentials) {
+        const url = `http://127.0.0.1:8000/api/auth/login-otp`;
+        console.log(url);
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json"
+          },
+          body: JSON.stringify({
+            email_or_phone: credentials?.email_or_phone,
+            otp: credentials?.otp
+          })
+
+        });
+
+        if (res.ok) {
+          return await res.json();
+        }
         return null;
       }
     })
   ],
+
   callbacks: {
-    async session({session ,token,user}){
-      return session
+    async session({ session, token, user }) {
+      return session;
     },
     async jwt({ token, user }) {
       if (user && 'tokens' in user) {
@@ -52,10 +81,10 @@ const authOptions: NextAuthOptions = {
         token.accessToken = userWithTokens.tokens.access_token;
         token.expiresIn = 3600;
       }
-      console.log(token, user);
       return token;
     }
   },
+
   pages: {
     signIn: '/auth/login-password',
     newUser: '/auth/register'
