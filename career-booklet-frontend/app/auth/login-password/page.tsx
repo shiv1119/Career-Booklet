@@ -1,9 +1,9 @@
 'use client';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaEnvelope, FaLock } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import Link from 'next/link';
 
 type FormData = {
@@ -14,6 +14,16 @@ type FormData = {
 const LoginWithPassword: React.FC = () => {
   const { register, handleSubmit, formState: { errors }, setError } = useForm<FormData>();
   const router = useRouter();
+  const {status} = useSession()
+    
+  
+    const isAuthenticated = status === 'authenticated';
+    useEffect(() => {
+      if (isAuthenticated) {
+        router.replace('/');
+      }
+    }, [isAuthenticated, router]);
+  
 
   const onSubmit = async (data: FormData) => {
     signIn('credentials', {
