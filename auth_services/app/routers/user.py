@@ -301,7 +301,7 @@ async def send_otp(email_or_phone: str, purpose: str, db: db_dependency):
         else:
             raise HTTPException(status_code=400, detail="Account already activated. You can not send otp")
 
-    elif purpose == "reset_password":
+    elif purpose == "reset-password":
         print("OTP sent for password reset is", otp)
 
     elif purpose == "delete_account":
@@ -345,9 +345,9 @@ async def refresh_token_view(refresh_token: RefreshTokenRequest):
 
 
 @router.post("/auth/reset-password", status_code=status.HTTP_200_OK)
-async def reset_password(user_id: int, otp: str, new_password: str, db: db_dependency):
+async def reset_password(email: str, otp: str, new_password: str, db: db_dependency):
     user = db.query(User).filter(
-        (User.id == user_id)
+        (User.email == email)
     ).first()
 
     if not user:

@@ -58,7 +58,16 @@ const authOptions: NextAuthOptions = {
         });
 
         if (res.ok) {
-          return await res.json(); 
+          const data = await res.json(); 
+          if(data?.tokens?.access_token && data?.tokens?.refresh_token){
+            return data;
+          } else{
+            throw new Error("MFA Required");
+          }
+        }
+        else {
+          const data = await res.json();
+          throw new Error(data?.detail);
         }
         return null;
       },
