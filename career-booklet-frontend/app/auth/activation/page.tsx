@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaEnvelope } from 'react-icons/fa';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { signIn, useSession } from 'next-auth/react';
 
 const Activation: React.FC = () => {
   const router = useRouter();
@@ -16,6 +17,15 @@ const Activation: React.FC = () => {
   const [activationSuccess, setActivationSuccess] = useState<boolean>(false);
   const [countdown, setCountdown] = useState<number>(3);
   const searchParams = useSearchParams();
+  const {status} = useSession()
+    
+  
+  const isAuthenticated = status === 'authenticated';
+    useEffect(() => {
+      if (isAuthenticated) {
+        router.replace('/');
+      }
+  }, [isAuthenticated, router]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -89,29 +99,19 @@ useEffect(() => {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     setMessage(null);
-    try {
-      const response = await fetch('http://127.0.0.1:8000/api/user/activate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailOrPhone, otp }),
-      });
-
-      const responseData = await response.json();
-
-      if (response.ok) {
-        setMessage({ text: 'Account activated successfully!', type: 'success' });
-        setActivationSuccess(true); 
-        setShowOtpFields(false); 
-        console.log('Tokens saved:', responseData.tokens);
-      } else {
-        setMessage({ text: responseData.detail || 'Activation failed. Please try again.', type: 'error' });
-      }
-    } catch (error) {
-      console.error('Error during account activation:', error);
-      setMessage({ text: 'An error occurred during activation. Please try again.', type: 'error' });
-    } finally {
-      setIsSubmitting(false);
-    }
+    signIn('credentials', {
+            email: emailOrPhone,
+            activation_otp: otp,
+            redirect: false,
+            callbackUrl: '/'
+          }).then(res => {
+            if (res?.error) {
+              setMessage({ text: res.error, type: 'error' });
+            } else {
+              console.log('');
+              router.push('/');
+            }
+          });
   };
 
   const handleResendOtp = async () => {

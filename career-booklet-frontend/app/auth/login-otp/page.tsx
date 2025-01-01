@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaEnvelope } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signIn , useSession} from 'next-auth/react';
 
 type FormData = {
   emailOrPhone: string;
@@ -16,7 +16,15 @@ const LoginWithOtp: React.FC = () => {
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
   const { register, handleSubmit, formState: { errors }, setError } = useForm<FormData>();
   const router = useRouter();
+  const {status} = useSession()
+  
 
+  const isAuthenticated = status === 'authenticated';
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/');
+    }
+  }, [isAuthenticated, router]);
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (otpSent && countdown > 0) {
@@ -25,14 +33,26 @@ const LoginWithOtp: React.FC = () => {
     return () => clearInterval(timer);
   }, [otpSent, countdown]);
 
+    const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Backspace' && index > 0 && !e.currentTarget.value) {
+        inputs.current[index - 1]?.focus();
+      }
+    };
+
+    const handleInputChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.value && index < inputs.current.length - 1) {
+          inputs.current[index + 1]?.focus();
+        }
+    };
+
   const onSubmit = async (data: FormData) => {
     if (!otpSent) {
       handleSendOtp(data);
     } else {
       const otp = inputs.current.map(input => input?.value).join('');
-      signIn('OTP', {
+      signIn('credentials', {
         email_or_phone: data.emailOrPhone,
-        otp: otp,
+        login_otp: otp,
         redirect: false,
         callbackUrl: '/'
       }).then(res => {
@@ -91,8 +111,10 @@ const LoginWithOtp: React.FC = () => {
                   key={i}
                   type="text"
                   maxLength={1}
-                  className="w-9 h-9 py-3 text-center border rounded-lg focus:ring-blue-500"
+                  className="w-9 h-9 py-3 text-center border text-sm font-bold rounded-lg dark:text-black focus:ring-blue-500"
                   ref={(el) => (inputs.current[i] = el)}
+                  onKeyDown={(e) => handleKeyDown(i, e)}
+                  onChange={(e) => handleInputChange(i, e)}
                 />
               ))}
             </div>

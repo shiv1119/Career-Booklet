@@ -1,11 +1,13 @@
   'use client';
-  import React, { useState } from 'react';
+  import React, { useEffect, useState } from 'react';
   import { useForm } from 'react-hook-form';
   import { FaPhoneAlt, FaEnvelope, FaLock } from 'react-icons/fa';
   import { AiOutlineClose } from 'react-icons/ai';
   import PhoneInput from 'react-phone-input-2';
   import 'react-phone-input-2/lib/style.css';
   import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+  
 
   type FormData = {
     email: string;
@@ -19,7 +21,15 @@
     const [errorMessages, setErrorMessages] = useState<string[]>([]);
     const [emailMessage, setEmailMessage] = useState<string | null>(null);
     const [modal, setModal] = useState<{ visible: boolean; content: JSX.Element | null }>({ visible: false, content: null });
-
+    const {status} = useSession()
+      
+    
+    const isAuthenticated = status === 'authenticated';
+    useEffect(() => {
+        if (isAuthenticated) {
+          router.replace('/');
+        }
+    }, [isAuthenticated, router]);
     const {
       register,
       handleSubmit,
@@ -65,10 +75,10 @@
                 },
               });
             } else {
-              setErrorMessage("Account exists with this email.");
+              setErrorMessages(["Account exists with this email."]);
             }
           } else {
-            setErrorMessage("");
+            setErrorMessages([""]);
           }
       } catch (error) {
         console.error('Error checking email:', error);
