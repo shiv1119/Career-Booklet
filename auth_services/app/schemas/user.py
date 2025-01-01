@@ -50,4 +50,6 @@ class RecoverAccountRequest(BaseModel):
     email: str
     otp: str
 
-
+class LoginOTPRequest(BaseModel):
+    email_or_phone: str
+    otp: str

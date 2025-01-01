@@ -1,12 +1,12 @@
 'use client';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaEnvelope } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 
 type FormData = {
   emailOrPhone: string;
-  password?: string;
   otp?: string;
 };
 
@@ -30,49 +30,33 @@ const LoginWithOtp: React.FC = () => {
       handleSendOtp(data);
     } else {
       const otp = inputs.current.map(input => input?.value).join('');
-      try {
-        // Call NextAuth API (credentials provider)
-        const response = await fetch('/api/auth/callback/credentials', {
-          method: 'POST',
-          body: JSON.stringify({
-            email_or_phone: data.emailOrPhone,
-            otp: otp,
-          }),
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-        if (response.ok) {
-          const responseData = await response.json();
-          const { tokens } = responseData;
-          router.push('/');
+      signIn('OTP', {
+        email_or_phone: data.emailOrPhone,
+        otp: otp,
+        redirect: false,
+        callbackUrl: '/'
+      }).then(res => {
+        if (res?.error) {
+          setError('otp', { message: res.error });
         } else {
-          const errorData = await response.json();
-          setError('otp', {
-            type: 'manual',
-            message: errorData.message || 'Invalid OTP',
-          });
+          console.log('');
+          router.push('/');
         }
-      } catch (error) {
-        console.error('Error during OTP login:', error);
-      }
+      });
     }
   };
 
   const handleSendOtp = async (data: FormData) => {
     try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/api/auth/send-otp?email_or_phone=${data.emailOrPhone}&purpose=login`,
-        { method: 'POST' }
-      );
+      const response = await fetch(`http://127.0.0.1:8000/api/auth/send-otp?email_or_phone=${data?.emailOrPhone}&purpose=login`, {
+        method: 'POST',
+      });
+
       if (response.ok) {
         setOtpSent(true);
         setCountdown(60);
       } else {
-        const errorData = await response.json();
-        setError('emailOrPhone', {
-          type: 'manual',
-          message: errorData.message || 'Failed to send OTP',
-        });
+        setError('emailOrPhone', { message: 'Failed to send OTP' });
       }
     } catch (error) {
       console.error('Error during OTP send:', error);
@@ -92,7 +76,7 @@ const LoginWithOtp: React.FC = () => {
             <input
               type="text"
               id="emailOrPhone"
-              className="text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 text-gray-900 rounded-lg pl-3 py-2 w-full focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+              className="text-sm dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-300 text-gray-900 rounded-lg pl-3 py-2 w-full focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
               placeholder="name@domain.com or +91 1234567890"
               {...register('emailOrPhone', { required: 'Email or Phone is required' })}
             />

@@ -1,10 +1,10 @@
 'use client';
-import Link from 'next/link';
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { FaEnvelope, FaLock } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
+import Link from 'next/link';
 
 type FormData = {
   emailOrPhone: string;
@@ -21,14 +21,14 @@ const LoginWithPassword: React.FC = () => {
         password: data.password,
         redirect: false,
         callbackUrl: '/',
-    }).then((res)=> {
-        if(res?.error) {
+    }).then((res) => {
+        if (res?.error) {
             setError('emailOrPhone', { message: res.error });
         } else {
             router.push('/');
         }
-    })
-  }
+    });
+  };
 
   return (
     <div className="w-full min-h-screen flex justify-center dark:bg-grey-800">
@@ -36,7 +36,7 @@ const LoginWithPassword: React.FC = () => {
         {errors.emailOrPhone && <p className="text-sm mb-2 text-red-500">{errors.emailOrPhone.message}</p>}
         <div className="mb-5 flex items-center">
           <div className="w-full">
-            <div className='flex items-center'>
+            <div className="flex items-center">
               <FaEnvelope className="mr-3 mb-2 text-gray-500" />
               <label htmlFor="emailOrPhone" className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Email or Phone</label>
             </div>
@@ -52,7 +52,7 @@ const LoginWithPassword: React.FC = () => {
 
         <div className="mb-5 flex items-center">
           <div className="w-full">
-            <div className='flex items-center'>
+            <div className="flex items-center">
               <FaLock className="mr-3 mb-2 text-gray-500" />
               <div className="flex items-center justify-between w-full">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Password</label>
@@ -76,8 +76,9 @@ const LoginWithPassword: React.FC = () => {
         >
           Login
         </button>
-      <div className="mt-3 text-center text-sm text-blue-500">
-          <Link href='/auth/login-otp'>Login wiht OTP?</Link>
+
+        <div className="mt-3 text-center text-sm text-blue-500">
+          <Link href='/auth/login-otp'>Login with OTP?</Link>
         </div>
       </form>
     </div>
