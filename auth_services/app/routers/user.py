@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from app.models.user import User
 from typing import Annotated, Union
-from app.schemas.user import UserCreate, UserOut,UserActivate, AuthResponse, TokenOut, RefreshTokenRequest, LoginRequest, OTPResponse, EmailCheckRequest, TokenValidationRequest, RecoverAccountRequest, LoginOTPRequest
+from app.schemas.user import UserCreate, UserOut,UserActivate, AuthResponse, TokenOut, RefreshTokenRequest, LoginRequest, OTPResponse, EmailCheckRequest, TokenValidationRequest, RecoverAccountRequest, LoginOTPRequest, ResetPasswordRequest
 from app.utils.helpers import generate_otp, mask_email, generate_unique_old_email
 from app.auth.jwt import create_access_token, create_refresh_token, verify_password, hash_password, get_current_user, refresh_access_token, oauth2_bearer, verify_token
 from datetime import datetime, timezone, timedelta
@@ -345,18 +345,18 @@ async def refresh_token_view(refresh_token: RefreshTokenRequest):
 
 
 @router.post("/auth/reset-password", status_code=status.HTTP_200_OK)
-async def reset_password(email: str, otp: str, new_password: str, db: db_dependency):
+async def reset_password(request:ResetPasswordRequest, db: db_dependency):
     user = db.query(User).filter(
-        (User.email == email)
+        (User.email == request.email)
     ).first()
 
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
     
-    if not verify_otp(user.id, otp, db):
+    if not verify_otp(user.id, request.otp, db):
         raise HTTPException(status_code=400, detail="Invalid OTP for reset password")
     
-    user.password = hash_password(new_password)
+    user.password = hash_password(request.new_password)
     user.otp=None
     user.otp_expiry=None
     db.commit()
