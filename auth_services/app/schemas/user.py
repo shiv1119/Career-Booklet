@@ -53,3 +53,8 @@ class RecoverAccountRequest(BaseModel):
 class LoginOTPRequest(BaseModel):
     email_or_phone: str
     otp: str
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    otp: str
+    new_password: str
