@@ -6,7 +6,7 @@ from app.models.profile import UserProfile, AboutUser, Skill
 from datetime import date
 from pydantic import HttpUrl
 from typing import Optional
-from app.schemas.profile import UserProfileGetResponse, UserProfileUpdateRequest, AboutUserCreate, AboutUserUpdate, SkillCreate, UserProfileCreateRequest, AboutUserGetRequest
+from app.schemas.profile import UserProfileGetResponse, UserProfileUpdateRequest, AboutUserCreate, AboutUserUpdate, SkillCreate, UserProfileCreateRequest, AboutUserGetRequest, SkillGet
 from app.utils.helper import save_image, handle_image_update, remove_saved_image
 from uuid import uuid4
 import os
@@ -210,44 +210,44 @@ async def get_about(db: db_dependency, request: Request):
 
 #skills section
 
-# @router.post("/skills", response_model=SkillCreate, status_code=status.HTTP_201_CREATED)
-# def create_skill(skill: SkillCreate, db: db_dependency):
-#     db_skill = db.query(Skill).filter(Skill.name == skill.name).first()
-#     if db_skill:
-#         raise HTTPException(status_code=400, detail="Skill already exists")
+@router.post("/skills", response_model=SkillGet, status_code=status.HTTP_201_CREATED)
+def create_skill(skill: SkillCreate, db: db_dependency):
+    db_skill = db.query(Skill).filter(Skill.name == skill.name).first()
+    if db_skill:
+        raise HTTPException(status_code=400, detail="Skill already exists")
 
-#     new_skill = Skill(name=skill.name)
-#     db.add(new_skill)
-#     db.commit()
-#     db.refresh(new_skill)
-#     return new_skill
+    new_skill = Skill(name=skill.name)
+    db.add(new_skill)
+    db.commit()
+    db.refresh(new_skill)
+    return new_skill
 
 
-# @router.put("/user/{auth_user_id}/skills", response_model=User)
-# def update_user_skills(auth_user_id: int, skills_data: UserSkillsUpdate, db: Session = Depends(get_db)):
-#     user = db.query(User).filter(User.id == auth_user_id).first()
-#     if not user:
-#         raise HTTPException(status_code=404, detail="User not found")
+@router.put("/user/{auth_user_id}/skills", response_model=User)
+def update_user_skills(auth_user_id: int, skills_data: UserSkillsUpdate, db: Session = Depends(get_db)):
+    user = db.query(UserSkill).filter(User.id == auth_user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-#     existing_skills = db.query(Skill).filter(Skill.id.in_(skills_data.skills)).all()
-#     existing_skill_ids = {skill.id for skill in existing_skills}
+    existing_skills = db.query(Skill).filter(Skill.id.in_(skills_data.skills)).all()
+    existing_skill_ids = {skill.id for skill in existing_skills}
 
-#     new_skills = [Skill(name=skill_name) for skill_name in skills_data.skills if skill_name not in existing_skill_ids]
-#     db.add_all(new_skills)
-#     db.commit()
-#     db.refresh(existing_skills)
+    new_skills = [Skill(name=skill_name) for skill_name in skills_data.skills if skill_name not in existing_skill_ids]
+    db.add_all(new_skills)
+    db.commit()
+    db.refresh(existing_skills)
 
-#     user_skills = []
-#     for idx, skill_id in enumerate(skills_data.skills):
-#         skill = db.query(Skill).filter(Skill.id == skill_id).first()
-#         if skill:
-#             user_skill = UserSkill(
-#                 auth_user_id=auth_user_id,
-#                 skill_id=skill.id,
-#                 order=skills_data.skill_order[idx]
-#             )
-#             user_skills.append(user_skill)
+    user_skills = []
+    for idx, skill_id in enumerate(skills_data.skills):
+        skill = db.query(Skill).filter(Skill.id == skill_id).first()
+        if skill:
+            user_skill = UserSkill(
+                auth_user_id=auth_user_id,
+                skill_id=skill.id,
+                order=skills_data.skill_order[idx]
+            )
+            user_skills.append(user_skill)
 
-#     db.add_all(user_skills)
-#     db.commit()
-#     return {"status": "success", "message": "User skills updated"}
+    db.add_all(user_skills)
+    db.commit()
+    return {"status": "success", "message": "User skills updated"}

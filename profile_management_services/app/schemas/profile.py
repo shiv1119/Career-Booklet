@@ -70,6 +70,13 @@ class SkillCreate(BaseModel):
     class Config:
         from_attributes = True
 
+class SkillGet(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        from_attributes = True
+
 class UserSkillsUpdate(BaseModel):
     skills: List[int]
     skill_order: List[int]
