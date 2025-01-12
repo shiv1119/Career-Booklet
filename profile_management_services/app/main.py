@@ -22,4 +22,4 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
-app.include_router(profile.router, prefix="/api", tags=["profile"])
+app.include_router(profile.router, prefix="/api", tags=["Profile Management Services"])

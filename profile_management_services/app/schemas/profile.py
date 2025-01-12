@@ -4,20 +4,17 @@ from fastapi import Form
 from typing import Optional, List
 
 class UserProfileCreateRequest(BaseModel):
-    auth_user_id: int
     full_name: str
     additional_name: Optional[str] = None
     pronouns: Optional[str] = None
-    date_of_birth: Optional[date] = None
+    date_of_birth: Optional[str] = None
     gender: Optional[str] = None
     country: Optional[str] = None
     city: Optional[str] = None
     full_address: Optional[str] = None
     website: Optional[HttpUrl] = None
-
     class Config:
         from_attributes = True
-
 
 class UserProfileGetResponse(BaseModel):
     auth_user_id: int
@@ -49,13 +46,19 @@ class UserProfileUpdateRequest(BaseModel):
     website: Optional[str] = None
 
 class AboutUserCreate(BaseModel):
-    auth_user_id: int
     about: Optional[str] = None
 
     class Config:
         from_attributes = True
 
 class AboutUserUpdate(BaseModel):
+    about: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class AboutUserGetRequest(BaseModel):
+    id: int
     about: Optional[str] = None
 
     class Config:
