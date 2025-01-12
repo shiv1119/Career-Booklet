@@ -21,7 +21,7 @@ def get_db():
     finally:
         db.close()
 
-@router.post("/institutions", response_model=dict, status_code=status.HTTP_201_CREATED)
+@router.post("/institutions", status_code=status.HTTP_201_CREATED)
 def create_institution(
     db: Session = Depends(get_db),
     name: str = Form(...),
@@ -29,12 +29,10 @@ def create_institution(
     website: str | None = Form(None),
     logo: Optional[UploadFile] = File(None),
 ):
-    # Check if institution already exists
     existing_institution = db.query(Institution).filter(Institution.name == name).first()
     if existing_institution:
         raise HTTPException(status_code=400, detail="Institution with this name already exists.")
 
-    # Handle logo upload
     logo_path = None
     if logo:
         try:
@@ -45,7 +43,6 @@ def create_institution(
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to upload logo: {str(e)}")
 
-    # Create institution
     new_institution = Institution(
         name=name,
         full_address=full_address,
@@ -59,11 +56,24 @@ def create_institution(
     db.refresh(new_institution)
 
     return {
-        "message": "Institution created successfully.",
-        "institution": {
-            "name": new_institution.name,
-            "full_address": new_institution.full_address,
-            "website": new_institution.website,
-            "logo": new_institution.logo,
-        },
+        "message": "Institution created successfully."
     }
+
+
+@router.get("/institutions/{institution_id}", response_model=InstitutionGetResponse, status_code=status.HTTP_200_OK)
+def get_institution(institution_id: int, db: Session = Depends(get_db)):
+    institution = db.query(Institution).filter(Institution.id == institution_id).first()
+
+    if not institution:
+        raise HTTPException(status_code=404, detail=f"Institution with id {institution_id} does not exists.")
+    
+    return institution
+
+@router.get("/institutions/", response_model=InstitutionGetResponse, status_code=status.HTTP_200_OK)
+def get_institution_by_name(institution_name: str, db: Session = Depends(get_db)):
+    institution = db.query(Institution).filter(Institution.name == institution_name).first()
+
+    if not institution:
+        raise HTTPException(status_code=404, detail=f"Institution with id {institution_name} does not exists.")
+    
+    return institution

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status, Body
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status, Body, Request, FastAPI
 from typing import Annotated, Union
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
@@ -6,10 +6,13 @@ from app.models.profile import UserProfile, AboutUser, Skill
 from datetime import date
 from pydantic import HttpUrl
 from typing import Optional
-from app.schemas.profile import UserProfileCreateRequest, UserProfileGetResponse, UserProfileUpdateRequest, AboutUserCreate, AboutUserUpdate, SkillCreate
+from app.schemas.profile import UserProfileGetResponse, UserProfileUpdateRequest, AboutUserCreate, AboutUserUpdate, SkillCreate, UserProfileCreateRequest, AboutUserGetRequest
 from app.utils.helper import save_image, handle_image_update, remove_saved_image
 from uuid import uuid4
 import os
+from fastapi.encoders import jsonable_encoder
+import os
+from fastapi.responses import JSONResponse
 
 router = APIRouter()
 
@@ -24,79 +27,73 @@ def get_db():
         db.close()
 
 db_dependency = Annotated[Session, Depends(get_db)]
+app = FastAPI()
+@app.middleware("http")
+async def extract_user_id_middleware(request: Request, call_next):
+    user_id = request.headers.get("x-user-id")
+    print(user_id)
+    if not user_id:
+        raise HTTPException(status_code=400, detail="User ID not found in headers")
+    request.state.user_id = user_id
+    response = await call_next(request)
+    return response
 
 @router.get("/")
 async def hello():
     return {"message": "hello world"}
 
+
 @router.post("/profile/", status_code=status.HTTP_201_CREATED)
 async def create_user_profile(
+    user_profile: UserProfileCreateRequest,
     db: db_dependency,
-    auth_user_id: int = Form(...),  # individual field
-    full_name: str = Form(...),
-    additional_name: Optional[str] = Form(None),
-    pronouns: Optional[str] = Form(None),
-    date_of_birth: Optional[date] = Form(None),
-    gender: Optional[str] = Form(None),
-    country: Optional[str] = Form(None),
-    city: Optional[str] = Form(None),
-    full_address: Optional[str] = Form(None),
-    website: Optional[HttpUrl] = Form(None),
-    profile_image: Optional[UploadFile] = File(None),
-    profile_background_image: Optional[UploadFile] = File(None),
+    request: Request
 ):
-    existing_profile = db.query(UserProfile).filter(UserProfile.auth_user_id == auth_user_id).first()
+    user_id = request.headers.get("x-user-id")
+    print(user_id)
+    existing_profile = db.query(UserProfile).filter(UserProfile.auth_user_id == user_id).first()
     if existing_profile:
         raise HTTPException(status_code=400, detail="Profile with this auth_user_id already exists.")
+    
+    def empty_string_to_none(value: str):
+        return None if value == '' else value
 
-    profile_image_path = None
-    profile_background_image_path = None
+    try:
+        new_profile = UserProfile(
+            auth_user_id=user_id,
+            full_name=empty_string_to_none(user_profile.full_name),
+            additional_name=empty_string_to_none(user_profile.additional_name),
+            pronouns=empty_string_to_none(user_profile.pronouns),
+            date_of_birth=empty_string_to_none(user_profile.date_of_birth),
+            gender=empty_string_to_none(user_profile.gender),
+            country=empty_string_to_none(user_profile.country),
+            city=empty_string_to_none(user_profile.city),
+            full_address=empty_string_to_none(user_profile.full_address),
+            website=str(user_profile.website) if user_profile.website else None,
+        )
 
-    if profile_image:
-        filename = f"{uuid4().hex}_{profile_image.filename}"
-        profile_image_path = os.path.join(UPLOAD_DIRECTORY, filename)
-        os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
-        with open(profile_image_path, "wb") as f:
-            f.write(profile_image.file.read())
+        db.add(new_profile)
+        db.commit()
+        db.refresh(new_profile)
 
-    if profile_background_image:
-        filename = f"{uuid4().hex}_{profile_background_image.filename}"
-        profile_background_image_path = os.path.join(UPLOAD_DIRECTORY, filename)
-        os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
-        with open(profile_background_image_path, "wb") as f:
-            f.write(profile_background_image.file.read())
-
-    new_profile = UserProfile(
-        auth_user_id=auth_user_id,
-        full_name=full_name,
-        additional_name=additional_name,
-        pronouns=pronouns,
-        date_of_birth=date_of_birth,
-        gender=gender,
-        country=country,
-        city=city,
-        full_address=full_address,
-        website=str(website) if website else None,
-        profile_image=profile_image_path,
-        profile_background_image=profile_background_image_path,
-    )
-
-    db.add(new_profile)
-    db.commit()
-    db.refresh(new_profile)
-
-    return {"message": "Profile created successfully", "profile": new_profile}
+        return JSONResponse(content=jsonable_encoder({"message": "Profile created successfully", "profile": new_profile}))
+    
+    except Exception as e:
+        print(f"Error creating profile: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error creating profile: {str(e)}")
 
 
-@router.put("/update-profile-image/{user_id}", status_code=status.HTTP_200_OK)
+@router.put("/update-profile-image/", status_code=status.HTTP_200_OK)
 async def update_profile_image(
     db: db_dependency,
-    user_id: int,
+    request: Request,
     profile_image: Optional[UploadFile] = File(None)
 ):
-    user_profile = db.query(UserProfile).filter(UserProfile.id == user_id).first()
+    user_id = request.headers.get("x-user-id")
+    print(user_id)
+    user_profile = db.query(UserProfile).filter(UserProfile.auth_user_id == user_id).first()
     if not user_profile:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="User profile not found")
 
     try:
         updated_path = handle_image_update(db, user_profile, "profile_image", profile_image, "profile_image")
@@ -107,15 +104,17 @@ async def update_profile_image(
         raise HTTPException(status_code=500, detail=f"Error updating profile image: {str(e)}")
 
 
-@router.put("/update-background-image/{user_id}", status_code=status.HTTP_200_OK)
+@router.put("/update-background-image/", status_code=status.HTTP_200_OK)
 async def update_profile_background_image(
     db: db_dependency,
-    user_id: int,
-    profile_background_image: UploadFile = File(None)  # Allow null
+    request: Request,
+    profile_background_image:Optional[UploadFile] = File(None) 
 ):
-    user_profile = db.query(UserProfile).filter(UserProfile.id == user_id).first()
+    user_id = request.headers.get("x-user-id")
+    print(user_id)
+    user_profile = db.query(UserProfile).filter(UserProfile.auth_user_id == user_id).first()
     if not user_profile:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="User profile not found")
 
     try:
         updated_path = handle_image_update(db, user_profile, "profile_background_image", profile_background_image, "profile_background_image")
@@ -126,9 +125,10 @@ async def update_profile_background_image(
         raise HTTPException(status_code=500, detail=f"Error updating profile background image: {str(e)}")
 
 
-@router.get("/profile/{auth_user_id}", response_model=UserProfileGetResponse, status_code=status.HTTP_200_OK)
-async def get_user_profile(auth_user_id: int, db: db_dependency):
-    user_profile = db.query(UserProfile).filter(UserProfile.auth_user_id == auth_user_id).first()
+@router.get("/profile/", response_model=UserProfileGetResponse, status_code=status.HTTP_200_OK)
+async def get_user_profile(db: db_dependency, request: Request):
+    user_id = request.headers.get("x-user-id")
+    user_profile = db.query(UserProfile).filter(UserProfile.auth_user_id == user_id).first()
 
     if user_profile is None:
         raise HTTPException(status_code=404, detail="User profile not found")
@@ -139,10 +139,11 @@ async def get_user_profile(auth_user_id: int, db: db_dependency):
 @router.put("/profile/{auth_user_id}", response_model=UserProfileGetResponse, status_code=status.HTTP_200_OK)
 async def update_user_profile(
         db: db_dependency,
-        auth_user_id: int,
         user_profile_data: UserProfileUpdateRequest,
+        request: Request
 ):
-    user_profile = db.query(UserProfile).filter(UserProfile.auth_user_id == auth_user_id).first()
+    user_id = request.headers.get("x-user-id")
+    user_profile = db.query(UserProfile).filter(UserProfile.auth_user_id == user_id).first()
 
     if user_profile is None:
         raise HTTPException(status_code=404, detail="User profile not found")
@@ -171,12 +172,12 @@ async def update_user_profile(
 
     return user_profile
 
-
 #User About Section
 @router.post("/profile/about/", status_code=status.HTTP_201_CREATED)
-async def create_about(db: db_dependency, about_user: AboutUserCreate):
+async def create_about(db: db_dependency, about_user: AboutUserCreate, request: Request):
+    user_id = request.headers.get("x-user-id")
     about_user_db = AboutUser(
-        auth_user_id=about_user.auth_user_id,
+        auth_user_id=user_id,
         about=about_user.about
     )
     db.add(about_user_db)
@@ -186,8 +187,9 @@ async def create_about(db: db_dependency, about_user: AboutUserCreate):
 
 
 @router.put("/profile/about/{about_id}", status_code=status.HTTP_200_OK)
-async def update_about(db: db_dependency, auth_user_id: int, data: AboutUserUpdate):
-    about_user = db.query(AboutUser).filter(AboutUser.auth_user_id==auth_user_id).first()
+async def update_about(db: db_dependency, data: AboutUserUpdate, request: Request):
+    user_id = request.headers.get("x-user-id")
+    about_user = db.query(AboutUser).filter(AboutUser.auth_user_id==user_id).first()
     if not about_user:
         raise HTTPException(status_code=404, detail="About section not found")
 
@@ -196,9 +198,10 @@ async def update_about(db: db_dependency, auth_user_id: int, data: AboutUserUpda
     db.refresh(about_user)
     return about_user
 
-@router.get("/profile/about/{auth_user_id}",response_model=AboutUserUpdate,status_code=status.HTTP_200_OK)
-async def get_about(db: db_dependency, auth_user_id: int):
-    about_user = db.query(AboutUser).filter(AboutUser.auth_user_id==auth_user_id).first()
+@router.get("/profile/about/{auth_user_id}",response_model=AboutUserGetRequest,status_code=status.HTTP_200_OK)
+async def get_about(db: db_dependency, request: Request):
+    user_id = request.headers.get("x-user-id")
+    about_user = db.query(AboutUser).filter(AboutUser.auth_user_id==user_id).first()
     if not about_user:
         raise HTTPException(status_code=404, detail="About section not found")
 
@@ -207,17 +210,17 @@ async def get_about(db: db_dependency, auth_user_id: int):
 
 #skills section
 
-@router.post("/skills", response_model=SkillCreate, status_code=status.HTTP_201_CREATED)
-def create_skill(skill: SkillCreate, db: db_dependency):
-    db_skill = db.query(Skill).filter(Skill.name == skill.name).first()
-    if db_skill:
-        raise HTTPException(status_code=400, detail="Skill already exists")
+# @router.post("/skills", response_model=SkillCreate, status_code=status.HTTP_201_CREATED)
+# def create_skill(skill: SkillCreate, db: db_dependency):
+#     db_skill = db.query(Skill).filter(Skill.name == skill.name).first()
+#     if db_skill:
+#         raise HTTPException(status_code=400, detail="Skill already exists")
 
-    new_skill = Skill(name=skill.name)
-    db.add(new_skill)
-    db.commit()
-    db.refresh(new_skill)
-    return new_skill
+#     new_skill = Skill(name=skill.name)
+#     db.add(new_skill)
+#     db.commit()
+#     db.refresh(new_skill)
+#     return new_skill
 
 
 # @router.put("/user/{auth_user_id}/skills", response_model=User)
@@ -225,15 +228,15 @@ def create_skill(skill: SkillCreate, db: db_dependency):
 #     user = db.query(User).filter(User.id == auth_user_id).first()
 #     if not user:
 #         raise HTTPException(status_code=404, detail="User not found")
-#
+
 #     existing_skills = db.query(Skill).filter(Skill.id.in_(skills_data.skills)).all()
 #     existing_skill_ids = {skill.id for skill in existing_skills}
-#
+
 #     new_skills = [Skill(name=skill_name) for skill_name in skills_data.skills if skill_name not in existing_skill_ids]
 #     db.add_all(new_skills)
 #     db.commit()
 #     db.refresh(existing_skills)
-#
+
 #     user_skills = []
 #     for idx, skill_id in enumerate(skills_data.skills):
 #         skill = db.query(Skill).filter(Skill.id == skill_id).first()
@@ -244,7 +247,7 @@ def create_skill(skill: SkillCreate, db: db_dependency):
 #                 order=skills_data.skill_order[idx]
 #             )
 #             user_skills.append(user_skill)
-#
+
 #     db.add_all(user_skills)
 #     db.commit()
 #     return {"status": "success", "message": "User skills updated"}

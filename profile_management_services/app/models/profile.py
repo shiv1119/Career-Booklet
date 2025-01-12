@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, Integer, Boolean, Date, DateTime
 from app.core.database import Base
-from datetime import datetime
+from datetime import datetime, timezone
 
 class UserProfile(Base):
     __tablename__ = "user_profiles"
@@ -38,11 +38,13 @@ class UserProfile(Base):
         }
 
 class AboutUser(Base):
-    __tablename__ = 'about_user'
-
-    id=Column(Integer, primary_key=True, index=True)
-    auth_user_id=Column(Integer, unique=True, nullable=False)
-    about=Column(String(3000), nullable=True)
+    __tablename__ = "about_user"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    auth_user_id = Column(Integer, nullable=False)
+    about = Column(String, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
 
 class Skill(Base):
@@ -58,3 +60,6 @@ class UserSkill(Base):
     auth_user_id = Column(Integer, nullable=False)
     skill_id = Column(Integer, nullable=False)
     order = Column(Integer, nullable=False)
+
+
+
