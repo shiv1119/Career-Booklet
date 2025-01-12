@@ -70,9 +70,78 @@ class SkillCreate(BaseModel):
     class Config:
         from_attributes = True
 
+class SkillGet(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        from_attributes = True
+
+class UserSkillsCreate(BaseModel):
+    skills: List[str]
+
+    class Config:
+        from_attributes = True
+
 class UserSkillsUpdate(BaseModel):
     skills: List[int]
-    skill_order: List[int]
+
+    class Config:
+        from_attributes = True
+
+class UserSkillsResponse(BaseModel):
+    auth_user_id: int
+    skills: List[str]
+
+class LanguageCreate(BaseModel):
+    name: str
+
+class LanguageResponse(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        from_attributes = True
+
+
+class LanguageCreate(BaseModel):
+    name: str
+    proficiency: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class UserLanguageCreate(BaseModel):
+    id: int
+    auth_user_id: int
+    language_id: int
+    proficiency: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class UserLanguageUpdate(BaseModel):
+    language_id: int
+    proficiency: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class UserLanguageResponse(BaseModel):
+    language_name: str
+    proficiency: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class UserLanguageDelete(BaseModel):
+    language_id: int
+    
+    class Config:
+        from_attributes = True
+
+class CauseCreate(BaseModel):
+    causes: Optional[List[str]] = None
 
     class Config:
         from_attributes = True
