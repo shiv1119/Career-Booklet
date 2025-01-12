@@ -1,6 +1,8 @@
-from sqlalchemy import Column, String, Integer, Boolean, Date, DateTime
+from sqlalchemy import Column, String, Integer, Boolean, Date, DateTime, ForeignKey
 from app.core.database import Base
+from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
+from sqlalchemy.sql import func
 
 class UserProfile(Base):
     __tablename__ = "user_profiles"
@@ -66,5 +68,33 @@ class UserSkill(Base):
     updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
 
+class Language(Base):
+    __tablename__ = 'languages'
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    user_languages = relationship("UserLanguage", back_populates="language")
+
+class UserLanguage(Base):
+    __tablename__ = 'user_languages'
+    
+    id = Column(Integer, primary_key=True, index=True)
+    auth_user_id = Column(Integer, index=True)  # Reference to user
+    language_id = Column(Integer, ForeignKey('languages.id'))
+    proficiency = Column(String)  # Proficiency level (e.g., Basic, Fluent, Native)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    language = relationship('Language', back_populates="user_languages")
 
 
+class Cause(Base):
+    __tablename__ = 'causes'
+
+    id = Column(Integer, primary_key=True, index=True)
+    auth_user_id = Column(Integer, index=True)
+    cause_name = Column(String, index=True)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
