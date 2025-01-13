@@ -11,6 +11,7 @@ class UserProfileCreateRequest(BaseModel):
     gender: Optional[str] = None
     country: Optional[str] = None
     city: Optional[str] = None
+    state: Optional[str] = None
     full_address: Optional[str] = None
     website: Optional[HttpUrl] = None
     class Config:
@@ -24,6 +25,7 @@ class UserProfileGetResponse(BaseModel):
     date_of_birth: Optional[date] = None
     gender: Optional[str] = None
     country: Optional[str] = None
+    state: Optional[str] = None
     city: Optional[str] = None
     full_address: Optional[str] = None
     website: Optional[HttpUrl] = None

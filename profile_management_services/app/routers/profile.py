@@ -69,6 +69,7 @@ async def create_user_profile(
             date_of_birth=empty_string_to_none(user_profile.date_of_birth),
             gender=empty_string_to_none(user_profile.gender),
             country=empty_string_to_none(user_profile.country),
+            state=empty_string_to_none(user_profile.state),
             city=empty_string_to_none(user_profile.city),
             full_address=empty_string_to_none(user_profile.full_address),
             website=str(user_profile.website) if user_profile.website else None,
@@ -162,6 +163,8 @@ async def update_user_profile(
         user_profile.gender = user_profile_data.gender
     if user_profile_data.country is not None:
         user_profile.country = user_profile_data.country
+    if user_profile_data.state is not None:
+        user_profile.state = user_profile_data.state
     if user_profile_data.city is not None:
         user_profile.city = user_profile_data.city
     if user_profile_data.full_address is not None:
@@ -305,7 +308,7 @@ def get_user_skills(auth_user_id: int, db: db_dependency):
     )
 
 @router.delete("/user/{auth_user_id}/skills", status_code=status.HTTP_200_OK)
-def delete_user_skills(auth_user_id: int, delete_data: UserSkillsUpdate, db: Session = Depends(get_db)):
+def delete_user_skills(auth_user_id: int, delete_data: UserSkillsUpdate, db: db_dependency):
 
     if not all(isinstance(skill, int) for skill in delete_data.skills):
         raise HTTPException(status_code=400, detail="Skills should be provided as integers (IDs)")
@@ -323,7 +326,7 @@ def delete_user_skills(auth_user_id: int, delete_data: UserSkillsUpdate, db: Ses
     return {"status": "success", "message": f"{delete_count} skills deleted for user {auth_user_id}"}
 
 @router.post("/languages/", response_model=LanguageResponse)
-def create_language(language_create: LanguageCreate, db: Session = Depends(get_db)):
+def create_language(language_create: LanguageCreate, db: db_dependency):
     db_language = db.query(Language).filter(Language.name == language_create.name).first()
     if db_language:
         raise HTTPException(status_code=400, detail="Language already exists")
@@ -337,7 +340,7 @@ def create_language(language_create: LanguageCreate, db: Session = Depends(get_d
 
 
 @router.post("/users/{auth_user_id}/languages/", status_code=status.HTTP_201_CREATED)
-def create_language_for_user(auth_user_id: int, language_create: LanguageCreate, db: Session = Depends(get_db)):
+def create_language_for_user(auth_user_id: int, language_create: LanguageCreate, db: db_dependency):
     db_language = db.query(Language).filter(Language.name == language_create.name).first()
     
     if not db_language:
@@ -370,7 +373,7 @@ def create_language_for_user(auth_user_id: int, language_create: LanguageCreate,
 @router.put("/users/{auth_user_id}/languages/{language_id}", status_code=status.HTTP_200_OK)
 def update_language_for_user(
     auth_user_id: int, 
-    user_language_update: UserLanguageUpdate, 
+    user_language_update: UserLanguageUpdate,
     db: db_dependency
 ):
 
@@ -452,7 +455,7 @@ def create_or_update_causes_for_user(
 
 
 @router.get("/users/{auth_user_id}/causes/", response_model=List[str], status_code=status.HTTP_200_OK)
-def get_causes_for_user(auth_user_id: int, db: Session = Depends(get_db)):
+def get_causes_for_user(auth_user_id: int, db: db_dependency):
     causes = db.query(Cause.cause_name).filter(Cause.auth_user_id == auth_user_id).all()
     
     if not causes:
