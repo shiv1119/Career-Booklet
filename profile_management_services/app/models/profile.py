@@ -17,6 +17,7 @@ class UserProfile(Base):
     date_of_birth = Column(Date, nullable=True)
     gender = Column(String(50), nullable=True)
     country = Column(String(100), nullable=True)
+    state = Column(String(100), nullable=True)
     city = Column(String(150), nullable=True)
     full_address = Column(String, nullable=True)
     website = Column(String, nullable=True)
@@ -33,6 +34,7 @@ class UserProfile(Base):
             "gender": self.gender,
             "country": self.country,
             "city": self.city,
+            "state": self.state,
             "full_address": self.full_address,
             "website": self.website,
             "profile_image": self.profile_image,
@@ -81,9 +83,9 @@ class UserLanguage(Base):
     __tablename__ = 'user_languages'
     
     id = Column(Integer, primary_key=True, index=True)
-    auth_user_id = Column(Integer, index=True)  # Reference to user
+    auth_user_id = Column(Integer, index=True)
     language_id = Column(Integer, ForeignKey('languages.id'))
-    proficiency = Column(String)  # Proficiency level (e.g., Basic, Fluent, Native)
+    proficiency = Column(String)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
@@ -98,3 +100,17 @@ class Cause(Base):
     cause_name = Column(String, index=True)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+class Eduction(Base):
+    __tablename__='eductaion'
+
+    id=Column(Integer, primary_key=True, index=True)
+    auth_user_id=Column(Integer, index=True)
+    institution_id = Column(Integer, index=True)
+    degree = Column(String)
+    field_of_study = Column(String)
+    start_date = Column(Date)
+    end_date = Column(Date, nullable=True)
+    grade = Column(String, nullable=True)
+    activities_societies = Column(String, nullable=True)
+    description=Column(String, nullable=True)
