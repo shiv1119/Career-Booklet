@@ -1,19 +1,30 @@
-from fastapi import UploadFile, File, HTTPException
+from fastapi import UploadFile, HTTPException
+from pathlib import Path
 from datetime import datetime
 import os
 
-UPLOAD_DIR = "./uploaded_images/profile_images"
+
+UPLOAD_DIR = Path("static/profile_images")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)  # Ensure the directory exists
+BASE_URL = "http://127.0.0.1:9001"
 
 def save_image(file: UploadFile, image_type: str):
-    filename = f"{image_type}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}"
-    file_path = os.path.join(UPLOAD_DIR, filename)
+    # Generate a unique filename
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+    filename = f"{image_type}_{timestamp}_{file.filename}"
+    file_path = UPLOAD_DIR / filename
+
     try:
-        with open(file_path, "wb") as f:
-            f.write(file.file.read())
+        # Write the file in chunks to handle large files
+        with file_path.open("wb") as f:
+            for chunk in file.file:
+                f.write(chunk)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error saving image: {str(e)}")
 
-    return file_path
+    # Return the URL of the uploaded image
+    image_url = f"profile_images/{filename}"
+    return image_url
 
 
 def handle_image_update(

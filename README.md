@@ -16,4 +16,8 @@ uvicorn app.main:app --reload
 # start postgresql server
 pg_ctl -D "C:\Program Files\PostgreSQL\17\data" start
 
+# rum docker compose
+docker-compose up --build
 
+# cleanup docker resources
+docker system prune -f

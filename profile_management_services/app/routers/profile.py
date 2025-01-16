@@ -16,10 +16,10 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.sql import case
 from typing import List
 
+
 router = APIRouter()
 
-UPLOAD_DIRECTORY = "./uploaded_images/profile_images"
-os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
+
 
 def get_db():
     db = SessionLocal()
@@ -39,6 +39,7 @@ async def extract_user_id_middleware(request: Request, call_next):
     request.state.user_id = user_id
     response = await call_next(request)
     return response
+
 
 @router.get("/")
 async def hello():
@@ -135,11 +136,26 @@ async def get_user_profile(db: db_dependency, request: Request):
 
     if user_profile is None:
         raise HTTPException(status_code=404, detail="User profile not found")
-
+    if user_profile.profile_background_image:
+        user_profile.profile_background_image = user_profile.profile_background_image.replace("\\", "/")
+    if user_profile.profile_background_image:
+        user_profile.profile_background_image = user_profile.profile_background_image.replace("./", "")
+    if user_profile.profile_background_image:
+        user_profile.profile_background_image = (
+            f"http://127.0.0.1:9001/static/{user_profile.profile_background_image}"
+        )
+    if user_profile.profile_image:
+        user_profile.profile_image = user_profile.profile_image.replace("\\", "/")
+    if user_profile.profile_image:
+        user_profile.profile_image = user_profile.profile_image.replace("./", "")
+    if user_profile.profile_image:
+        user_profile.profile_image = (
+            f"http://127.0.0.1:9001/static/{user_profile.profile_image}"
+        )
     return user_profile
 
 
-@router.put("/profile/{auth_user_id}", response_model=UserProfileGetResponse, status_code=status.HTTP_200_OK)
+@router.put("/profile/", response_model=UserProfileGetResponse, status_code=status.HTTP_200_OK)
 async def update_user_profile(
         db: db_dependency,
         user_profile_data: UserProfileUpdateRequest,
