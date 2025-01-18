@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Boolean, Date, DateTime, ForeignKey
+from sqlalchemy import Column, String, Integer, Boolean, Date, DateTime, ForeignKey, Text
 from app.core.database import Base
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
@@ -59,6 +59,9 @@ class Skill(Base):
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
+    education_skills = relationship("EducationSkill", back_populates="skill")
+    position_skills = relationship("PositionSkill", back_populates="skill")
+
 class UserSkill(Base):
     __tablename__ = 'user_skills'
 
@@ -101,16 +104,104 @@ class Cause(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
-class Eduction(Base):
-    __tablename__='eductaion'
+class Education(Base):
+    __tablename__ = 'education'
 
-    id=Column(Integer, primary_key=True, index=True)
-    auth_user_id=Column(Integer, index=True)
+    id = Column(Integer, primary_key=True, index=True)
+    auth_user_id = Column(Integer, index=True)
     institution_id = Column(Integer, index=True)
     degree = Column(String)
     field_of_study = Column(String)
-    start_date = Column(Date)
-    end_date = Column(Date, nullable=True)
+    start_date = Column(DateTime)
+    end_date = Column(DateTime, nullable=True)
     grade = Column(String, nullable=True)
     activities_societies = Column(String, nullable=True)
-    description=Column(String, nullable=True)
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    education_skills = relationship("EducationSkill", back_populates="education", cascade="all, delete-orphan")
+    education_media = relationship("EducationMedia", back_populates="education", cascade="all, delete-orphan")
+
+
+class EducationMedia(Base):
+    __tablename__ = 'education_media'
+
+    id = Column(Integer, primary_key=True, index=True)
+    education_id = Column(Integer, ForeignKey('education.id'), nullable=False)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    file_url = Column(String, nullable=True)
+    order = Column(Integer, default=0, index=True)
+    thumbnail_url = Column(String, nullable=True)
+    uploaded_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    links = Column(String, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    education = relationship("Education", back_populates="education_media")
+
+
+class EducationSkill(Base):
+    __tablename__ = 'education_skills'
+
+    id = Column(Integer, primary_key=True, index=True)
+    education_id = Column(Integer, ForeignKey('education.id'), nullable=False)
+    skill_id = Column(Integer, ForeignKey('skills.id'), nullable=False)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    education = relationship("Education", back_populates="education_skills")
+    skill = relationship("Skill", back_populates="education_skills")
+
+
+class Position(Base):
+    __tablename__ = 'position'
+
+    id = Column(Integer, primary_key=True, index=True)
+    auth_user_id = Column(Integer, index=True)
+    company_id = Column(Integer, index=True)
+    title = Column(String)
+    employment_type = Column(String, nullable=True)
+    start_date = Column(DateTime)
+    end_date = Column(DateTime, nullable=True)
+    location = Column(String, nullable=True)
+    location_type = Column(String, nullable=True)
+    profile_headline = Column(String, nullable=True)
+    found_platform = Column(String, nullable=True)
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    position_skills = relationship("PositionSkill", back_populates="position", cascade="all, delete-orphan")
+    position_media = relationship("PositionMedia", back_populates="position", cascade="all, delete-orphan")
+
+
+class PositionMedia(Base):
+    __tablename__ = 'position_media'
+
+    id = Column(Integer, primary_key=True, index=True)
+    position_id = Column(Integer, ForeignKey('position.id'), nullable=False)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    file_url = Column(String, nullable=True)
+    order = Column(Integer, default=0, index=True)
+    thumbnail_url = Column(String, nullable=True)
+    uploaded_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    position = relationship("Position", back_populates="position_media")
+
+
+class PositionSkill(Base):
+    __tablename__ = 'position_skills'
+
+    id = Column(Integer, primary_key=True, index=True)
+    position_id = Column(Integer, ForeignKey('position.id'), nullable=False)
+    skill_id = Column(Integer, ForeignKey('skills.id'), nullable=False)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    position = relationship("Position", back_populates="position_skills")
+    skill = relationship("Skill", back_populates="position_skills")

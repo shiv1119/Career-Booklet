@@ -30,16 +30,6 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 app = FastAPI()
-@app.middleware("http")
-async def extract_user_id_middleware(request: Request, call_next):
-    user_id = request.headers.get("x-user-id")
-    print(user_id)
-    if not user_id:
-        raise HTTPException(status_code=400, detail="User ID not found in headers")
-    request.state.user_id = user_id
-    response = await call_next(request)
-    return response
-
 
 @router.get("/")
 async def hello():

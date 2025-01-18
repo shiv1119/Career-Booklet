@@ -2,11 +2,10 @@ from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, s
 from typing import List, Optional, Union, Annotated, Dict, Any
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
-from app.models.profile import UserSkill, Skill, EducationMedia, Education, EducationSkill
-from app.schemas.education import NewEducationSkillInput, ExistingEducationSkillInput, UserSkillsCreate,EducationDeleteRequest
-from app.utils.helper import save_education_media
+from app.models.profile import UserSkill, Skill, Position, PositionMedia, PositionSkill
+from app.schemas.position import ExistingPositionSkillInput, NewPositionSkillInput, UserSkillsCreate, PositionDeleteRequest
+from app.utils.helper import save_position_media
 from app.routers.profile import create_user_skills
-from fastapi.encoders import jsonable_encoder
 from pydantic import ValidationError
 import json
 router = APIRouter()
@@ -22,17 +21,19 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
-@router.post("/education/", status_code=status.HTTP_201_CREATED)
-async def create_education(
+@router.post("/position/", status_code=status.HTTP_201_CREATED)
+async def create_position(
     db: db_dependency,
     auth_user_id: int = Form(...),
-    institution_id: Optional[int] = Form(None),
-    degree: Optional[str] = Form(None),
-    field_of_study: Optional[str] = Form(None),
+    company_id: Optional[int] = Form(None),
+    title: str = Form(...),
+    employment_type: Optional[str] = Form(None),
     start_date: str = Form(...),
     end_date: Optional[str] = Form(None),
-    grade: Optional[str] = Form(None),
-    activities_societies: Optional[str] = Form(None),
+    location: Optional[str] = Form(None),
+    location_type: Optional[str] = Form(None),
+    profile_headline: Optional[str] = Form(None),
+    found_platform: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
     existing_skills: Optional[str] = Form(None),
     new_skills: Optional[str] = Form(None),
@@ -40,42 +41,42 @@ async def create_education(
     media_metadata: Optional[str] = Form(None),
     links: Optional[str] = Form(None),
 ):
-    education_data = {
+    position_data = {
         "auth_user_id": auth_user_id,
-        "institution_id": institution_id,
-        "degree": degree,
-        "field_of_study": field_of_study,
+        "company_id": company_id,
+        "title": title,
+        "employment_type": employment_type,
         "start_date": start_date,
         "end_date": end_date,
-        "grade": grade,
-        "activities_societies": activities_societies,
+        "location": location,
+        "location_type": location_type,
+        "profile_headline": profile_headline,
+        "found_platform": found_platform,
         "description": description,
     }
-    education_data = {k: v for k, v in education_data.items() if v is not None}
-    education = Education(**education_data)
-    db.add(education)
+    position_data = {k: v for k, v in position_data.items() if v is not None}
+    position = Position(**position_data)
+    db.add(position)
     db.commit()
-    db.refresh(education)
-
+    db.refresh(position)
     if existing_skills:
         try:
-            existing_skills_data = ExistingEducationSkillInput.model_validate_json(existing_skills)
+            existing_skills_data = ExistingPositionSkillInput.model_validate_json(existing_skills)
             for skill_id in existing_skills_data.skill_id:
-                education_skill = EducationSkill(education_id=education.id, skill_id=skill_id)
-                db.add(education_skill)
+                position_skill = PositionSkill(position_id=position.id, skill_id=skill_id)
+                db.add(position_skill)
         except ValidationError as e:
             raise HTTPException(status_code=400, detail=f"Invalid existing_skills format: {e}")
-
     if new_skills:
         try:
-            new_skills_data = NewEducationSkillInput.model_validate_json(new_skills)
+            new_skills_data = NewPositionSkillInput.model_validate_json(new_skills)
             user_skills_data = UserSkillsCreate(skills=new_skills_data.skill_name)
             user_skills_response = create_user_skills(auth_user_id, user_skills_data, db)
 
             for skill_name in user_skills_response.skills:
                 skill = db.query(Skill).filter(Skill.name == skill_name).first()
-                education_skill = EducationSkill(education_id=education.id, skill_id=skill.id)
-                db.add(education_skill)
+                position_skill = PositionSkill(position_id=position.id, skill_id=skill.id)
+                db.add(position_skill)
         except ValidationError as e:
             raise HTTPException(status_code=400, detail=f"Invalid new_skills format: {e}")
 
@@ -88,9 +89,9 @@ async def create_education(
 
             for idx, file in enumerate(media_files):
                 metadata = metadata_list[idx]
-                media_instance = save_education_media(
+                media_instance = save_position_media(
                     file=file,
-                    education_id=education.id,
+                    position_id=position.id,
                     media_data={
                         "title": metadata.get("title", f"File {order}"),
                         "description": metadata.get("description", f"Uploaded file {file.filename}"),
@@ -106,8 +107,8 @@ async def create_education(
         try:
             link_list = json.loads(links)
             for idx, link_data in enumerate(link_list):
-                media_instance = EducationMedia(
-                    education_id=education.id,
+                media_instance = PositionMedia(
+                    position_id=position.id,
                     title=link_data.get("title", f"Link {order}"),
                     description=link_data.get("description", ""),
                     file_url=link_data.get("link"),
@@ -120,22 +121,22 @@ async def create_education(
 
     db.commit()
 
+    return {"message": "Position created successfully", "position_id": position.id}
 
 
-    return {"message": "Education created successfully", "education_id": education.id}
-
-@router.get("/education/", response_model=List[dict], status_code=status.HTTP_200_OK)
-async def get_user_education(auth_user_id: int, db: db_dependency):
-    education_entries = db.query(Education).filter(Education.auth_user_id == auth_user_id).all()
+@router.get("/position/", response_model=List[dict], status_code=status.HTTP_200_OK)
+async def get_user_position(auth_user_id: int, db: db_dependency):
+    position_entries = db.query(Position).filter(Position.auth_user_id == auth_user_id).all()
     
-    if not education_entries:
-        raise HTTPException(status_code=404, detail="No education entries found for this user.")
+    if not position_entries:
+        raise HTTPException(status_code=404, detail="No position entries found for this user.")
+    
     response_data = []
 
-    for education in education_entries:
-        skills = db.query(Skill).join(EducationSkill).filter(EducationSkill.education_id == education.id).all()
+    for position in position_entries:
+        skills = db.query(Skill).join(PositionSkill).filter(PositionSkill.position_id == position.id).all()
         skill_names = [skill.name for skill in skills]
-        media_files = db.query(EducationMedia).filter(EducationMedia.education_id == education.id).all()
+        media_files = db.query(PositionMedia).filter(PositionMedia.position_id == position.id).all()
         
         media_data = []
         link_data = []
@@ -158,39 +159,43 @@ async def get_user_education(auth_user_id: int, db: db_dependency):
                     "order": media.order
                 })
         
-        education_info = {
-            "id": education.id,
-            "degree": education.degree,
-            "field_of_study": education.field_of_study,
-            "institution_id": education.institution_id,
-            "start_date": education.start_date,
-            "end_date": education.end_date,
-            "grade": education.grade,
-            "activities_societies": education.activities_societies,
-            "description": education.description,
+        position_info = {
+            "id": position.id,
+            "title": position.title,
+            "employment_type": position.employment_type,
+            "start_date": position.start_date,
+            "end_date": position.end_date,
+            "location": position.location,
+            "location_type": position.location_type,
+            "profile_headline": position.profile_headline,
+            "found_platform": position.found_platform,
+            "description": position.description,
             "skills": skill_names,
             "media_files": media_data,
             "links": link_data,
-            "created_at": education.created_at,
-            "updated_at": education.updated_at
+            "created_at": position.created_at,
+            "updated_at": position.updated_at
         }
         
-        response_data.append(education_info)
+        response_data.append(position_info)
 
     return response_data
 
-@router.patch("/education/", status_code=status.HTTP_200_OK)
-async def update_education(
+
+@router.patch("/position/", status_code=status.HTTP_200_OK)
+async def update_position(
     db: db_dependency,
-    education_id: int = Form(...),
+    position_id: int = Form(...),
     auth_user_id: int = Form(...),
-    institution_id: Optional[int] = Form(None),
-    degree: Optional[str] = Form(None),
-    field_of_study: Optional[str] = Form(None),
+    company_id: Optional[int] = Form(None),
+    title: Optional[str] = Form(None),
+    employment_type: Optional[str] = Form(None),
     start_date: Optional[str] = Form(None),
     end_date: Optional[str] = Form(None),
-    grade: Optional[str] = Form(None),
-    activities_societies: Optional[str] = Form(None),
+    location: Optional[str] = Form(None),
+    location_type: Optional[str] = Form(None),
+    profile_headline: Optional[str] = Form(None),
+    found_platform: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
     existing_skills: Optional[str] = Form(None),
     new_skills: Optional[str] = Form(None),
@@ -198,73 +203,78 @@ async def update_education(
     media_metadata: Optional[str] = Form(None),
     links: Optional[str] = Form(None),
 ):
-    education = db.query(Education).filter(Education.id == education_id).first()
-    if not education:
-        raise HTTPException(status_code=404, detail="Education not found")
+    position = db.query(Position).filter(Position.id == position_id).first()
+    if not position:
+        raise HTTPException(status_code=404, detail="Position not found")
 
-    if education.auth_user_id != auth_user_id:
-        raise HTTPException(status_code=403, detail="You do not have permission to update this education entry")
-    if institution_id:
-        education.institution_id = institution_id
-    if degree:
-        education.degree = degree
-    if field_of_study:
-        education.field_of_study = field_of_study
+    if position.auth_user_id != auth_user_id:
+        raise HTTPException(status_code=403, detail="You do not have permission to update this position entry")
+
+    if company_id:
+        position.company_id = company_id
+    if title:
+        position.title = title
+    if employment_type:
+        position.employment_type = employment_type
     if start_date:
-        education.start_date = start_date
+        position.start_date = start_date
     if end_date:
-        education.end_date = end_date
-    if grade:
-        education.grade = grade
-    if activities_societies:
-        education.activities_societies = activities_societies
+        position.end_date = end_date
+    if location:
+        position.location = location
+    if location_type:
+        position.location_type = location_type
+    if profile_headline:
+        position.profile_headline = profile_headline
+    if found_platform:
+        position.found_platform = found_platform
     if description:
-        education.description = description
+        position.description = description
 
     db.commit()
-    db.refresh(education)
-
+    db.refresh(position)
     if existing_skills:
         try:
-            existing_skills_data = ExistingEducationSkillInput.model_validate_json(existing_skills)
+            existing_skills_data = ExistingPositionSkillInput.model_validate_json(existing_skills)
 
-            db.query(EducationSkill).filter(EducationSkill.education_id == education_id).delete()
+            db.query(PositionSkill).filter(PositionSkill.position_id == position_id).delete()
             db.commit()
 
             for skill_id in existing_skills_data.skill_id:
-                education_skill = EducationSkill(education_id=education.id, skill_id=skill_id)
-                db.add(education_skill)
+                position_skill = PositionSkill(position_id=position.id, skill_id=skill_id)
+                db.add(position_skill)
         except ValidationError as e:
             raise HTTPException(status_code=400, detail=f"Invalid existing_skills format: {e}")
+
     if new_skills:
         try:
-            new_skills_data = NewEducationSkillInput.model_validate_json(new_skills)
+            new_skills_data = NewPositionSkillInput.model_validate_json(new_skills)
             user_skills_data = UserSkillsCreate(skills=new_skills_data.skill_name)
             user_skills_response = create_user_skills(auth_user_id, user_skills_data, db)
 
             for skill_name in user_skills_response.skills:
                 skill = db.query(Skill).filter(Skill.name == skill_name).first()
-                education_skill = EducationSkill(education_id=education.id, skill_id=skill.id)
-                db.add(education_skill)
+                position_skill = PositionSkill(position_id=position.id, skill_id=skill.id)
+                db.add(position_skill)
         except ValidationError as e:
             raise HTTPException(status_code=400, detail=f"Invalid new_skills format: {e}")
 
     if media_files is None:
-        db.query(EducationMedia).filter(EducationMedia.education_id == education_id).delete()
+        db.query(PositionMedia).filter(PositionMedia.position_id == position_id).delete()
         db.commit()
     elif media_files:
         try:
             metadata_list = json.loads(media_metadata) if media_metadata else []
             if len(metadata_list) != len(media_files):
                 raise HTTPException(status_code=400, detail="Metadata count must match the number of media files.")
-            db.query(EducationMedia).filter(EducationMedia.education_id == education_id).delete()
+            db.query(PositionMedia).filter(PositionMedia.position_id == position_id).delete()
             db.commit()
 
             for idx, file in enumerate(media_files):
                 metadata = metadata_list[idx]
-                media_instance = save_education_media(
+                media_instance = save_position_media(
                     file=file,
-                    education_id=education.id,
+                    position_id=position.id,
                     media_data={
                         "title": metadata.get("title", f"File {idx}"),
                         "description": metadata.get("description", f"Uploaded file {file.filename}"),
@@ -274,17 +284,16 @@ async def update_education(
                 db.add(media_instance)
         except json.JSONDecodeError:
             raise HTTPException(status_code=400, detail="Invalid media_metadata format. Must be a JSON array.")
-
     if links:
         try:
             link_list = json.loads(links)
 
-            db.query(EducationMedia).filter(EducationMedia.education_id == education_id, EducationMedia.file_url != None).delete()
+            db.query(PositionMedia).filter(PositionMedia.position_id == position_id, PositionMedia.file_url != None).delete()
             db.commit()
 
             for idx, link_data in enumerate(link_list):
-                media_instance = EducationMedia(
-                    education_id=education.id,
+                media_instance = PositionMedia(
+                    position_id=position.id,
                     title=link_data.get("title", f"Link {idx}"),
                     description=link_data.get("description", ""),
                     file_url=link_data.get("link"),
@@ -293,23 +302,23 @@ async def update_education(
                 db.add(media_instance)
         except json.JSONDecodeError:
             raise HTTPException(status_code=400, detail="Invalid links format. Must be a JSON array.")
+    
     db.commit()
 
-    return {"message": "Education updated successfully", "education_id": education.id}
+    return {"message": "Position updated successfully", "position_id": position.id}
 
+@router.delete("/position/", status_code=status.HTTP_200_OK)
+async def delete_position(auth_user_id: int, deleteRequest: PositionDeleteRequest, db: db_dependency):
+    position = db.query(Position).filter(Position.id == deleteRequest.id).first()
+    if position.auth_user_id != auth_user_id:
+        raise HTTPException(status_code=403, detail="You do not have permission to delete this position entry")
+    if not position:
+        raise HTTPException(status_code=404, detail="Position not found")
 
-@router.delete("/education/", status_code=status.HTTP_200_OK)
-async def delete_education(auth_user_id: int, deleteRequest: EducationDeleteRequest, db: db_dependency):
-    education = db.query(Education).filter(Education.id == deleteRequest.id).first()
-    if education.auth_user_id != auth_user_id:
-        raise HTTPException(status_code=403, detail="You do not have permission to update this education entry")
-    if not education:
-        raise HTTPException(status_code=404, detail="Education not found")
-    db.query(EducationSkill).filter(EducationSkill.education_id == deleteRequest.id).delete()
-    db.query(EducationMedia).filter(EducationMedia.education_id == deleteRequest.id).delete()
-    db.delete(education)
+    db.query(PositionSkill).filter(PositionSkill.position_id == deleteRequest.id).delete()
+    db.query(PositionMedia).filter(PositionMedia.position_id == deleteRequest.id).delete()
+    db.delete(position)
 
     db.commit()
 
-    return {"message": f"Education with ID {deleteRequest.id} and related records deleted successfully"}
-
+    return {"message": f"Position with ID {deleteRequest.id} and related records deleted successfully"}
