@@ -30,9 +30,6 @@ services = {
 AUTH_SERVICE_URL = "http://127.0.0.1:9000/api/validate-token"
 
 async def validate_token(token: str) -> str:
-    """
-    Validate the token with the auth service and return the user_id if valid.
-    """
     async with httpx.AsyncClient() as client:
         try:
             response = await client.post(AUTH_SERVICE_URL, json={"token": token})
@@ -48,9 +45,6 @@ async def validate_token(token: str) -> str:
             raise HTTPException(status_code=503, detail="Auth service unavailable")
 
 async def forward_request(service_url: str, request: Request, user_id: str, path: str):
-    """
-    Forward the request to the target service, appending user_id to headers.
-    """
     async with httpx.AsyncClient() as client:
         try:
             headers = dict(request.headers)
@@ -69,28 +63,20 @@ async def forward_request(service_url: str, request: Request, user_id: str, path
 
 @app.api_route("/", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def gateway(service: str, path: str, request: Request):
-    """
-    API Gateway entry point that routes requests to microservices.
-    """
-    # Extract JWT token
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Authorization header missing or invalid")
 
     token = auth_header.split(" ")[1]
 
-    # Validate the token
     user_id = await validate_token(token)
 
-    # Get the target service URL
     service_url = services[service]
     if not service_url:
         raise HTTPException(status_code=404, detail="Service not found")
 
-    # Forward the request
     response = await forward_request(service_url, request, user_id, path)
 
-    # Return the forwarded response
     return JSONResponse(
         status_code=response.status_code,
         content=response.json() if response.headers.get("Content-Type") == "application/json" else response.text,

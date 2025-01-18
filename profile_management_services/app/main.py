@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.core.database import Base, engine
-from app.routers import profile
+from app.routers import profile, education, position
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 app = FastAPI()
@@ -23,3 +23,6 @@ app.add_middleware(
 Base.metadata.create_all(bind=engine)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(profile.router, prefix="/api", tags=["Profile Management Services"])
+app.include_router(education.router, prefix="/api", tags=["Profile Management Services"])
+app.include_router(position.router, prefix="/api", tags=["Profile Management Services"])
+
