@@ -3,7 +3,7 @@ from pathlib import Path
 from datetime import datetime
 import os
 from typing import List, Optional
-from app.models.profile import EducationMedia, PositionMedia
+from app.models.profile import EducationMedia, PositionMedia, CertificationMedia, ProjectMedia
 
 UPLOAD_DIR = Path("static/profile_images")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -110,6 +110,62 @@ def save_position_media(file, position_id: int, media_data: Optional[dict] = Non
     order = media_data.get("order", 0) if media_data else 0
     media = PositionMedia(
         position_id=position_id,
+        title=title,
+        description=description,
+        file_url=file_url,
+        order=order
+    )
+
+    return media
+
+BASE_MEDIA_DIR = Path("static/certification_media")
+
+def save_certification_media(file, certification_id: int, media_data: Optional[dict] = None):
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+    filename = f"{certification_id}_{timestamp}_{file.filename}"
+    file_path = BASE_MEDIA_DIR / filename
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        with file_path.open("wb") as f:
+            f.write(file.file.read())
+    except Exception as e:
+        raise Exception(f"Error saving file: {e}")
+    normalized_file_url = str(file_path).replace("\\", "/")
+    file_url = normalized_file_url.replace(str(BASE_MEDIA_DIR), "/static/certification_media")
+    title = media_data.get("title", file.filename) if media_data else file.filename
+    description = media_data.get("description", None) if media_data else None
+    order = media_data.get("order", 0) if media_data else 0
+    media = CertificationMedia(
+        certification_id=certification_id,
+        title=title,
+        description=description,
+        file_url=file_url,
+        order=order
+    )
+
+    return media
+
+BASE_MEDIA_DIR = Path("static/project_media")
+
+def save_project_media(file, project_id: int, media_data: Optional[dict] = None):
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+    filename = f"{project_id}_{timestamp}_{file.filename}"
+    file_path = BASE_MEDIA_DIR / filename
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        with file_path.open("wb") as f:
+            f.write(file.file.read())
+    except Exception as e:
+        raise Exception(f"Error saving file: {e}")
+    normalized_file_url = str(file_path).replace("\\", "/")
+    file_url = normalized_file_url.replace(str(BASE_MEDIA_DIR), "/static/project_media")
+    title = media_data.get("title", file.filename) if media_data else file.filename
+    description = media_data.get("description", None) if media_data else None
+    order = media_data.get("order", 0) if media_data else 0
+    media = ProjectMedia(
+        project_id=project_id,
         title=title,
         description=description,
         file_url=file_url,
