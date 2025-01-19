@@ -61,6 +61,8 @@ class Skill(Base):
 
     education_skills = relationship("EducationSkill", back_populates="skill")
     position_skills = relationship("PositionSkill", back_populates="skill")
+    certification_skills = relationship("CertificationSkill", back_populates="skill")
+    project_skills = relationship("ProjectSkill", back_populates="skill")
 
 class UserSkill(Base):
     __tablename__ = 'user_skills'
@@ -135,8 +137,6 @@ class EducationMedia(Base):
     order = Column(Integer, default=0, index=True)
     thumbnail_url = Column(String, nullable=True)
     uploaded_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
-    links = Column(String, nullable=True)
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     education = relationship("Education", back_populates="education_media")
@@ -188,7 +188,6 @@ class PositionMedia(Base):
     order = Column(Integer, default=0, index=True)
     thumbnail_url = Column(String, nullable=True)
     uploaded_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     position = relationship("Position", back_populates="position_media")
@@ -205,3 +204,141 @@ class PositionSkill(Base):
 
     position = relationship("Position", back_populates="position_skills")
     skill = relationship("Skill", back_populates="position_skills")
+
+
+class Certification(Base):
+    __tablename__ = 'certification'
+
+    id = Column(Integer, primary_key=True, index=True)
+    auth_user_id = Column(Integer, index=True)
+    name = Column(String, nullable=False)
+    organization_id = Column(Integer, index=True)
+    issue_date = Column(DateTime, nullable=False)
+    expiration_date = Column(DateTime, nullable=True)
+    credential_id = Column(String, nullable=True)
+    credential_url = Column(String, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    certification_skills = relationship("CertificationSkill", back_populates="certification", cascade="all, delete-orphan")
+    certification_media = relationship("CertificationMedia", back_populates="certification", cascade="all, delete-orphan")
+
+
+class CertificationMedia(Base):
+    __tablename__ = 'certification_media'
+
+    id = Column(Integer, primary_key=True, index=True)
+    certification_id = Column(Integer, ForeignKey('certification.id'), nullable=False)  # Corrected FK
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    file_url = Column(String, nullable=True)
+    order = Column(Integer, default=0, index=True)
+    thumbnail_url = Column(String, nullable=True)
+    uploaded_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    certification = relationship("Certification", back_populates="certification_media")
+
+
+class CertificationSkill(Base):
+    __tablename__ = 'certification_skills'
+
+    id = Column(Integer, primary_key=True, index=True)
+    certification_id = Column(Integer, ForeignKey('certification.id'), nullable=False)  # Corrected FK
+    skill_id = Column(Integer, ForeignKey('skills.id'), nullable=False)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    certification = relationship("Certification", back_populates="certification_skills")
+    skill = relationship("Skill", back_populates="certification_skills")
+
+
+class Project(Base):
+    __tablename__ = "projects"
+    id = Column(Integer, primary_key=True, index=True)
+    auth_user_id = Column(Integer, nullable=False)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    start_date = Column(DateTime, nullable=True) 
+    end_date = Column(DateTime, nullable=True)
+    technologies = Column(Text, nullable=True)
+    role = Column(String, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    project_media = relationship("ProjectMedia", back_populates="project", cascade="all, delete")
+    project_skills = relationship("ProjectSkill", back_populates="project", cascade="all, delete")
+    contributors = relationship("Contributor", back_populates="project", cascade="all, delete")
+    associations = relationship("ProjectAssociation", back_populates="project", cascade="all, delete")
+
+class ProjectMedia(Base):
+    __tablename__ = "project_media"
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"))
+    title = Column(String, nullable=True)
+    description = Column(Text, nullable=True)
+    file_url = Column(String, nullable=False)
+    order = Column(Integer, default=0)
+    uploaded_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    project = relationship("Project", back_populates="project_media")
+
+class ProjectSkill(Base):
+    __tablename__ = "project_skills"
+
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey('projects.id', ondelete="CASCADE"), nullable=False)
+    skill_id = Column(Integer, ForeignKey('skills.id', ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    project = relationship("Project", back_populates="project_skills")
+    skill = relationship("Skill", back_populates="project_skills")
+
+
+class Contributor(Base):
+    __tablename__ = "contributors"
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"))
+    user_id = Column(Integer, nullable=False)
+    role = Column(String, nullable=True) 
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    project = relationship("Project", back_populates="contributors")
+
+
+class ProjectAssociation(Base):
+    __tablename__ = "project_associations"
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"))
+    associated_type = Column(String, nullable=False)
+    associated_id = Column(Integer, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    project = relationship("Project", back_populates="associations")
+
+
+class Course(Base):
+    __tablename__ = "courses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    auth_user_id = Column(Integer, nullable=False)
+    name = Column(String, nullable=False)
+    number = Column(String, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    associations = relationship("CourseAssociation", back_populates="course", cascade="all, delete-orphan")
+
+class CourseAssociation(Base):
+    __tablename__ = "course_associations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    course_id = Column(Integer, ForeignKey("courses.id", ondelete="CASCADE"))
+    associated_type = Column(String, nullable=False)
+    associated_id = Column(Integer, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    course = relationship("Course", back_populates="associations")
