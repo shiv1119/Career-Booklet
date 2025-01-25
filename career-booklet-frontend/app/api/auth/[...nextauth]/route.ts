@@ -45,19 +45,19 @@ const authOptions: NextAuthOptions = {
         let body = {};
 
         if (credentials?.password) {
-          url = "http://127.0.0.1:8000/api/auth/login-password";
+          url = "http://127.0.0.1:9000/api/auth/login-password";
           body = {
             email_or_phone: credentials.email_or_phone,
             password: credentials.password,
           };
         } else if (credentials?.activation_otp) {
-          url = "http://127.0.0.1:8000/api/user/activate";
+          url = "http://127.0.0.1:9000/api/user/activate";
           body = {
             email: credentials.email,
             otp: credentials.activation_otp,
           };
         } else if (credentials?.login_otp) {
-          url = "http://127.0.0.1:8000/api/auth/login-otp";
+          url = "http://127.0.0.1:9000/api/auth/login-otp";
           body = {
             email_or_phone: credentials.email_or_phone,
             otp: credentials.login_otp,
@@ -104,7 +104,7 @@ const authOptions: NextAuthOptions = {
 
       if (typeof token.accessTokenExpires === "number" && currentTime > token.accessTokenExpires) {
         try {
-          const res = await fetch("http://127.0.0.1:8000/api/auth/refresh-token", {
+          const res = await fetch("http://127.0.0.1:9000/api/auth/refresh-token", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

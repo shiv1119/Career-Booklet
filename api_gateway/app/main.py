@@ -2,15 +2,16 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 from fastapi.responses import JSONResponse
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI(title="API Gateway")
 
 # Allowed origins for CORS
 allowed_origins = [
-    "http://localhost:3000",
-    "https://your-production-domain.com",
-    "http://127.0.0.1:9002",
-    "http://127.0.0.1:5500",
+    os.environ.get("ALLOWED_ORIGINS"),
 ]
 
 app.add_middleware(
@@ -23,11 +24,11 @@ app.add_middleware(
 
 # Microservices mapping
 services = {
-    "auth_service": "http://127.0.0.1:9000",
-    "profile_service": "http://127.0.0.1:9001",
+    "auth_service": os.environ.get("AUTH_SERVICE"),
+    "profile_service": os.environ.get("PROFILE_SERVICE"),
 }
 
-AUTH_SERVICE_URL = "http://127.0.0.1:9000/api/validate-token"
+AUTH_SERVICE_URL = f"{os.environ.get("AUTH_SERVICE")}/api/validate-token"
 
 async def validate_token(token: str) -> str:
     async with httpx.AsyncClient() as client:
@@ -54,7 +55,7 @@ async def forward_request(service_url: str, request: Request, user_id: str, path
                 method=request.method,
                 url=str(httpx.URL(service_url + path)),
                 headers=headers,
-                params=request.query_params,
+                # params=request.query_params,
                 content=await request.body(),
             )
             return response

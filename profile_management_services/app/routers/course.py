@@ -104,21 +104,46 @@ async def update_course(
     if associations:
         try:
             associations_data = json.loads(associations)
-            db.query(CourseAssociation).filter(CourseAssociation.course_id == course.id).delete()
+            if not associations_data:
+                db.query(CourseAssociation).filter(CourseAssociation.course_id == course.id).delete()
+                db.commit()
+                return {"message": "Associations cleared."}
+            existing_associations = db.query(CourseAssociation).filter(CourseAssociation.course_id == course.id).all()
+            existing_associations_set = {
+                (assoc.associated_type, assoc.associated_id) for assoc in existing_associations
+            }
+            for association in associations_data:
+                if "associated_type" not in association or "associated_id" not in association:
+                    raise HTTPException(
+                        status_code=400, 
+                        detail="Each association must contain 'associated_type' and 'associated_id'."
+                    )
+                if (association["associated_type"], association["associated_id"]) not in existing_associations_set:
+                    new_association = CourseAssociation(
+                        course_id=course.id,
+                        associated_type=association["associated_type"],
+                        associated_id=association["associated_id"]
+                    )
+                    db.add(new_association)
+
+            input_associations_set = {
+                (assoc["associated_type"], assoc["associated_id"]) for assoc in associations_data
+            }
+            associations_to_remove = [
+                assoc for assoc in existing_associations 
+                if (assoc.associated_type, assoc.associated_id) not in input_associations_set
+            ]
+            for assoc in associations_to_remove:
+                db.delete(assoc)
+
             db.commit()
 
-            for association in associations_data:
-                new_association = CourseAssociation(
-                    course_id=course.id,
-                    associated_type=association["associated_type"],
-                    associated_id=association["associated_id"]
-                )
-                db.add(new_association)
         except json.JSONDecodeError:
             raise HTTPException(status_code=400, detail="Invalid associations format. Must be a JSON array.")
-
-    db.commit()
-
+    else:
+        db.query(CourseAssociation).filter(CourseAssociation.course_id == course.id).delete()
+        db.commit()
+        
     return {"message": "Course updated successfully", "course_id": course.id}
 
 

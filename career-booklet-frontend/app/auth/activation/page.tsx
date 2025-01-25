@@ -78,7 +78,7 @@ useEffect(() => {
     setMessage(null); 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/api/auth/send-otp?email_or_phone=${encodeURIComponent(emailOrPhone)}&purpose=activation`,
+        `http://127.0.0.1:9000/api/auth/send-otp?email_or_phone=${encodeURIComponent(emailOrPhone)}&purpose=activation`,
         { method: 'POST' }
       );
 
@@ -119,7 +119,7 @@ useEffect(() => {
     setMessage(null);
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/api/auth/send-otp?email_or_phone=${encodeURIComponent(emailOrPhone)}&purpose=activation`,
+        `http://127.0.0.1:9000/api/auth/send-otp?email_or_phone=${encodeURIComponent(emailOrPhone)}&purpose=activation`,
         { method: 'POST' }
       );
 

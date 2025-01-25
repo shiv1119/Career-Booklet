@@ -83,30 +83,6 @@ async def user_activation(db: db_dependency, user: UserActivate, response: Respo
     db.refresh(db_user)
 
     generated_tokens = generate_tokens(db_user)
-    access_token = generated_tokens.tokens.access_token
-    if access_token:
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            max_age=MAX_AGE,
-            expires=EXPIRES,
-            secure=SECURE,
-            httponly=HTTP_ONLY,
-            samesite=SAME_SITE
-        )
-
-    refresh_token = generated_tokens.tokens.refresh_token
-    if refresh_token:
-        response.set_cookie(
-            key="refresh_token",
-            value=refresh_token,
-            max_age=MAX_AGE_REFRESH_TOKEN,
-            expires=EXPIRES_REFRESH_TOKEN,
-            secure=SECURE,
-            httponly=HTTP_ONLY,
-            samesite=SAME_SITE,
-        )
-
     return generated_tokens
 
 
@@ -172,30 +148,6 @@ async def login_with_password(login_request: LoginRequest, db: db_dependency, re
         })
 
     generated_tokens = generate_tokens(user)
-    access_token = generated_tokens.tokens.access_token
-    if access_token:
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            max_age=MAX_AGE,
-            expires=EXPIRES,
-            secure=SECURE,
-            httponly=HTTP_ONLY,
-            samesite=SAME_SITE
-        )
-
-    refresh_token = generated_tokens.tokens.refresh_token
-    if refresh_token:
-        response.set_cookie(
-            key="refresh_token",
-            value=refresh_token,
-            max_age=MAX_AGE_REFRESH_TOKEN,
-            expires=EXPIRES_REFRESH_TOKEN,
-            secure=SECURE,
-            httponly=HTTP_ONLY,
-            samesite=SAME_SITE,
-        )
-
     return generated_tokens
 
 
@@ -245,30 +197,7 @@ async def login_with_otp(request:LoginOTPRequest, db: db_dependency, response: R
     db.commit()
 
     generated_tokens = generate_tokens(user)
-    access_token = generated_tokens.tokens.access_token
-    if access_token:
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            max_age=MAX_AGE,
-            expires=EXPIRES,
-            secure=SECURE,
-            httponly=HTTP_ONLY,
-            samesite=SAME_SITE
-        )
-
-    refresh_token = generated_tokens.tokens.refresh_token
-    if refresh_token:
-        response.set_cookie(
-            key="refresh_token",
-            value=refresh_token,
-            max_age=MAX_AGE_REFRESH_TOKEN,
-            expires=EXPIRES_REFRESH_TOKEN,
-            secure=SECURE,
-            httponly=HTTP_ONLY,
-            samesite=SAME_SITE,
-        )
-
+    
     return generated_tokens
 
 
@@ -331,17 +260,7 @@ async def send_otp(email_or_phone: str, purpose: str, db: db_dependency):
 @router.post("/auth/refresh-token")
 async def refresh_token_view(refresh_token: RefreshTokenRequest):
     new_access_token= refresh_access_token(refresh_token.refresh_token)
-    response = JSONResponse(content={"message": "Token refreshed"})
-    response.set_cookie(
-        key="access_token",
-        value=new_access_token,
-        httponly=HTTP_ONLY,
-        secure=SECURE,
-        max_age=MAX_AGE,
-        samesite="Strict",
-    )
-    print(response)
-    return response
+    return new_access_token
 
 
 @router.post("/auth/reset-password", status_code=status.HTTP_200_OK)
@@ -423,30 +342,6 @@ async def recover_account(recover_request: RecoverAccountRequest, db: db_depende
     db.commit()
 
     generated_tokens = generate_tokens(user)
-    access_token = generated_tokens.tokens.access_token
-    if access_token:
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            max_age=MAX_AGE,
-            expires=EXPIRES,
-            secure=SECURE,
-            httponly=HTTP_ONLY,
-            samesite=SAME_SITE
-        )
-
-    refresh_token = generated_tokens.tokens.refresh_token
-    if refresh_token:
-        response.set_cookie(
-            key="refresh_token",
-            value=refresh_token,
-            max_age=MAX_AGE_REFRESH_TOKEN,
-            expires=EXPIRES_REFRESH_TOKEN,
-            secure=SECURE,
-            httponly=HTTP_ONLY,
-            samesite=SAME_SITE,
-        )
-
     return generated_tokens
 
 

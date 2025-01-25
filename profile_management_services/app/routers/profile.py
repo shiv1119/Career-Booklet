@@ -16,10 +16,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.sql import case
 from typing import List
 
-
 router = APIRouter()
-
-
 
 def get_db():
     db = SessionLocal()
@@ -144,7 +141,6 @@ async def get_user_profile(db: db_dependency, request: Request):
         )
     return user_profile
 
-
 @router.put("/profile/", response_model=UserProfileGetResponse, status_code=status.HTTP_200_OK)
 async def update_user_profile(
         db: db_dependency,
@@ -183,7 +179,6 @@ async def update_user_profile(
 
     return user_profile
 
-#User About Section
 @router.post("/profile/about/", status_code=status.HTTP_201_CREATED)
 async def create_about(db: db_dependency, about_user: AboutUserCreate, request: Request):
     user_id = request.headers.get("x-user-id")
@@ -195,7 +190,6 @@ async def create_about(db: db_dependency, about_user: AboutUserCreate, request: 
     db.commit()
     db.refresh(about_user_db)
     return {"message": "About section created successfully", "about data": about_user_db}
-
 
 @router.put("/profile/about/{about_id}", status_code=status.HTTP_200_OK)
 async def update_about(db: db_dependency, data: AboutUserUpdate, request: Request):

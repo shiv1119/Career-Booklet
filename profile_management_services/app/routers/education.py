@@ -120,8 +120,6 @@ async def create_education(
 
     db.commit()
 
-
-
     return {"message": "Education created successfully", "education_id": education.id}
 
 @router.get("/education/", response_model=List[dict], status_code=status.HTTP_200_OK)
@@ -227,15 +225,26 @@ async def update_education(
     if existing_skills:
         try:
             existing_skills_data = ExistingEducationSkillInput.model_validate_json(existing_skills)
-
-            db.query(EducationSkill).filter(EducationSkill.education_id == education_id).delete()
+            if not existing_skills_data.skill_id:
+                db.query(EducationSkill).filter(EducationSkill.education_id == education_id).delete()
+            else:
+                current_skills = db.query(EducationSkill).filter(EducationSkill.education_id == education_id).all()
+                current_skill_ids = {skill.skill_id for skill in current_skills}
+                skills_to_add = set(existing_skills_data.skill_id) - current_skill_ids
+                skills_to_remove = current_skill_ids - set(existing_skills_data.skill_id)
+                if skills_to_remove:
+                    db.query(EducationSkill).filter(
+                        EducationSkill.education_id == education_id,
+                        EducationSkill.skill_id.in_(skills_to_remove)
+                    ).delete()
+                for skill_id in skills_to_add:
+                    education_skill = EducationSkill(education_id=education.id, skill_id=skill_id)
+                    db.add(education_skill)
             db.commit()
 
-            for skill_id in existing_skills_data.skill_id:
-                education_skill = EducationSkill(education_id=education.id, skill_id=skill_id)
-                db.add(education_skill)
         except ValidationError as e:
             raise HTTPException(status_code=400, detail=f"Invalid existing_skills format: {e}")
+
     if new_skills:
         try:
             new_skills_data = NewEducationSkillInput.model_validate_json(new_skills)
@@ -249,51 +258,67 @@ async def update_education(
         except ValidationError as e:
             raise HTTPException(status_code=400, detail=f"Invalid new_skills format: {e}")
 
-    if media_files is None:
-        db.query(EducationMedia).filter(EducationMedia.education_id == education_id).delete()
-        db.commit()
-    elif media_files:
+    if media_files:
         try:
             metadata_list = json.loads(media_metadata) if media_metadata else []
+        
             if len(metadata_list) != len(media_files):
                 raise HTTPException(status_code=400, detail="Metadata count must match the number of media files.")
-            db.query(EducationMedia).filter(EducationMedia.education_id == education_id).delete()
-            db.commit()
-
+            current_media = db.query(EducationMedia).filter(EducationMedia.education_id == education_id).all()
+            current_media_files = {media.file_url for media in current_media if media.file_url}  # Existing files
+            files_to_add = {file.filename for file in media_files} - current_media_files
+            files_to_remove = current_media_files - {file.filename for file in media_files}
+            if files_to_remove:
+                db.query(EducationMedia).filter(
+                    EducationMedia.education_id == education_id,
+                    EducationMedia.file_url.in_(files_to_remove)
+                ).delete()
             for idx, file in enumerate(media_files):
                 metadata = metadata_list[idx]
-                media_instance = save_education_media(
-                    file=file,
-                    education_id=education.id,
-                    media_data={
-                        "title": metadata.get("title", f"File {idx}"),
-                        "description": metadata.get("description", f"Uploaded file {file.filename}"),
-                        "order": idx,
-                    },
-                )
-                db.add(media_instance)
+                if file.filename in files_to_add:
+                    media_instance = save_education_media(
+                        file=file,
+                        education_id=education.id,
+                        media_data={
+                            "title": metadata.get("title", f"File {idx}"),
+                            "description": metadata.get("description", f"Uploaded file {file.filename}"),
+                            "order": idx,
+                        },
+                    )
+                    db.add(media_instance)
+            
+            db.commit()
+
         except json.JSONDecodeError:
             raise HTTPException(status_code=400, detail="Invalid media_metadata format. Must be a JSON array.")
-
     if links:
         try:
             link_list = json.loads(links)
-
-            db.query(EducationMedia).filter(EducationMedia.education_id == education_id, EducationMedia.file_url != None).delete()
-            db.commit()
+            current_links = db.query(EducationMedia).filter(EducationMedia.education_id == education_id, EducationMedia.file_url != None).all()
+            current_link_urls = {link.file_url for link in current_links}
+            links_to_add = {link_data.get("link") for link_data in link_list} - current_link_urls
+            links_to_remove = current_link_urls - {link_data.get("link") for link_data in link_list}
+            if links_to_remove:
+                db.query(EducationMedia).filter(
+                    EducationMedia.education_id == education_id,
+                    EducationMedia.file_url.in_(links_to_remove)
+                ).delete()
 
             for idx, link_data in enumerate(link_list):
-                media_instance = EducationMedia(
-                    education_id=education.id,
-                    title=link_data.get("title", f"Link {idx}"),
-                    description=link_data.get("description", ""),
-                    file_url=link_data.get("link"),
-                    order=idx,
-                )
-                db.add(media_instance)
+                if link_data.get("link") in links_to_add:
+                    media_instance = EducationMedia(
+                        education_id=education.id,
+                        title=link_data.get("title", f"Link {idx}"),
+                        description=link_data.get("description", ""),
+                        file_url=link_data.get("link"),
+                        order=idx,
+                    )
+                    db.add(media_instance)
+
+            db.commit()
+
         except json.JSONDecodeError:
             raise HTTPException(status_code=400, detail="Invalid links format. Must be a JSON array.")
-    db.commit()
 
     return {"message": "Education updated successfully", "education_id": education.id}
 
