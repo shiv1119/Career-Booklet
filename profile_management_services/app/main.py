@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.core.database import Base, engine
-from app.routers import profile, education, position, project, course
+from app.routers import profile, education, position, project, course, test_score
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 app = FastAPI()
@@ -27,3 +27,4 @@ app.include_router(education.router, prefix="/api", tags=["Profile Management Se
 app.include_router(position.router, prefix="/api", tags=["Profile Management Services"])
 app.include_router(project.router, prefix="/api", tags=["Profile Management Services"])
 app.include_router(course.router, prefix="/api", tags=["Profile Management Services"])
+app.include_router(test_score.router, prefix="/api", tags=["Profile Management Services"])

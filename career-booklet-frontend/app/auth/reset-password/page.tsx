@@ -41,7 +41,7 @@ const ResetPassword: React.FC = () => {
     setMessage(null);
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/api/auth/send-otp?email_or_phone=${encodeURIComponent(email)}&purpose=reset-password`,
+        `http://127.0.0.1:9000/api/auth/send-otp?email_or_phone=${encodeURIComponent(email)}&purpose=reset-password`,
         { method: 'POST' }
       );
 
@@ -63,7 +63,7 @@ const ResetPassword: React.FC = () => {
     setIsSubmitting(true);
     setMessage(null);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/auth/reset-password', {
+      const response = await fetch('http://127.0.0.1:9000/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email, otp:otp, new_password: newPassword }),
@@ -90,7 +90,7 @@ const ResetPassword: React.FC = () => {
     try {
         const purpose = 'reset_password';
       const response = await fetch(
-        `http://127.0.0.1:8000/api/auth/send-otp?email_or_phone=${encodeURIComponent(email)}&purpose=${encodeURIComponent('reset_password')}`,
+        `http://127.0.0.1:9000/api/auth/send-otp?email_or_phone=${encodeURIComponent(email)}&purpose=${encodeURIComponent('reset_password')}`,
         { method: 'POST' }
       );
 

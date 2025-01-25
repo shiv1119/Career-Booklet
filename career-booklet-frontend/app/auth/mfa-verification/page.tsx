@@ -51,7 +51,7 @@ const MultiFactorVerification: React.FC = () => {
   const handleSendOtp = async (data: FormData) => {
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/api/auth/send-otp?email_or_phone=${data.emailOrPhone}&purpose=multi_factor_login`,
+        `http://127.0.0.1:9000/api/auth/send-otp?email_or_phone=${data.emailOrPhone}&purpose=multi_factor_login`,
         { method: 'POST' }
       );
 

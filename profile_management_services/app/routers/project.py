@@ -18,7 +18,6 @@ def get_db():
     finally:
         db.close()
 
-
 db_dependency = Annotated[Session, Depends(get_db)]
 
 @router.post("/projects/", status_code=status.HTTP_201_CREATED)
@@ -249,38 +248,105 @@ async def update_project(
     if contributors:
         try:
             contributors_data = json.loads(contributors)
-            db.query(Contributor).filter(Contributor.project_id == project_id).delete()
+
+            if not contributors_data:
+                db.query(Contributor).filter(Contributor.project_id == project.id).delete()
+                db.commit()
+                return {"message": "Contributors cleared."}
+
+            existing_contributors = db.query(Contributor).filter(Contributor.project_id == project.id).all()
+            existing_contributors_set = {(contrib.user_id, contrib.role) for contrib in existing_contributors}
+
             for contributor in contributors_data:
-                new_contributor = Contributor(
-                    project_id=project.id,
-                    user_id=contributor["user_id"],
-                    role=contributor.get("role", "Contributor")
-                )
-                db.add(new_contributor)
+                if "user_id" not in contributor or "role" not in contributor:
+                    raise HTTPException(
+                        status_code=400, 
+                        detail="Each contributor must contain 'user_id' and 'role'."
+                    )
+                if (contributor["user_id"], contributor["role"]) not in existing_contributors_set:
+                    new_contributor = Contributor(
+                        project_id=project.id,
+                        user_id=contributor["user_id"],
+                        role=contributor["role"]
+                    )
+                    db.add(new_contributor)
+
+            input_contributors_set = {(contributor["user_id"], contributor["role"]) for contributor in contributors_data}
+            contributors_to_remove = [
+                contrib for contrib in existing_contributors
+                if (contrib.user_id, contrib.role) not in input_contributors_set
+            ]
+
+            for contrib in contributors_to_remove:
+                db.delete(contrib)
+
+            db.commit()
+
         except json.JSONDecodeError:
             raise HTTPException(status_code=400, detail="Invalid contributors format. Must be a JSON array.")
+
     if associations:
         try:
             associations_data = json.loads(associations)
-            db.query(ProjectAssociation).filter(ProjectAssociation.project_id == project_id).delete()
+            if not associations_data:
+                db.query(ProjectAssociation).filter(ProjectAssociation.project_id == project.id).delete()
+                db.commit()
+                return {"message": "Associations cleared."}
+
+            existing_associations = db.query(ProjectAssociation).filter(ProjectAssociation.project_id == project.id).all()
+            existing_associations_set = {
+                (assoc.associated_type, assoc.associated_id) for assoc in existing_associations
+            }
+
             for association in associations_data:
-                new_association = ProjectAssociation(
-                    project_id=project.id,
-                    associated_type=association["associated_type"],
-                    associated_id=association["associated_id"]
-                )
-                db.add(new_association)
+                if "associated_type" not in association or "associated_id" not in association:
+                    raise HTTPException(
+                        status_code=400, 
+                        detail="Each association must contain 'associated_type' and 'associated_id'."
+                    )
+                if (association["associated_type"], association["associated_id"]) not in existing_associations_set:
+                    new_association = ProjectAssociation(
+                        project_id=project.id,
+                        associated_type=association["associated_type"],
+                        associated_id=association["associated_id"]
+                    )
+                    db.add(new_association)
+
+            input_associations_set = {
+                (assoc["associated_type"], assoc["associated_id"]) for assoc in associations_data
+            }
+            associations_to_remove = [
+                assoc for assoc in existing_associations 
+                if (assoc.associated_type, assoc.associated_id) not in input_associations_set
+            ]
+            for assoc in associations_to_remove:
+                db.delete(assoc)
+
+            db.commit()
+
         except json.JSONDecodeError:
             raise HTTPException(status_code=400, detail="Invalid associations format. Must be a JSON array.")
 
     if existing_skills:
         try:
             existing_skills_data = ExistingProjectSkillInput.model_validate_json(existing_skills)
+            current_skills = db.query(ProjectSkill).filter(ProjectSkill.project_id == project_id).all()
+            current_skill_ids = {skill.skill_id for skill in current_skills}
+            skills_to_add = set(existing_skills_data.skill_id) - current_skill_ids
+            skills_to_remove = current_skill_ids - set(existing_skills_data.skill_id)
 
-            db.query(ProjectSkill).filter(ProjectSkill.project_id == project_id).delete()
-            for skill_id in existing_skills_data.skill_id:
+            if skills_to_remove:
+                db.query(ProjectSkill).filter(
+                    ProjectSkill.project_id == project_id,
+                    ProjectSkill.skill_id.in_(skills_to_remove)
+                ).delete()
+
+            for skill_id in skills_to_add:
                 project_skill = ProjectSkill(project_id=project.id, skill_id=skill_id)
                 db.add(project_skill)
+
+            db.commit()
+
         except ValidationError as e:
             raise HTTPException(status_code=400, detail=f"Invalid existing_skills format: {e}")
 
@@ -294,6 +360,9 @@ async def update_project(
                 skill = db.query(Skill).filter(Skill.name == skill_name).first()
                 project_skill = ProjectSkill(project_id=project.id, skill_id=skill.id)
                 db.add(project_skill)
+
+            db.commit()
+
         except ValidationError as e:
             raise HTTPException(status_code=400, detail=f"Invalid new_skills format: {e}")
 
@@ -304,41 +373,68 @@ async def update_project(
             metadata_list = json.loads(media_metadata) if media_metadata else []
             if len(metadata_list) != len(media_files):
                 raise HTTPException(status_code=400, detail="Metadata count must match the number of media files.")
-            db.query(ProjectMedia).filter(ProjectMedia.project_id == project_id).delete()
+            
+            current_media_files = db.query(ProjectMedia).filter(ProjectMedia.project_id == project_id).all()
+            current_media_file_urls = {media.file_url for media in current_media_files}
+            
+            files_to_add = {file.filename for file in media_files} - current_media_file_urls
+            files_to_remove = current_media_file_urls - {file.filename for file in media_files}
+
+            if files_to_remove:
+                db.query(ProjectMedia).filter(
+                    ProjectMedia.project_id == project_id,
+                    ProjectMedia.file_url.in_(files_to_remove)
+                ).delete()
 
             for idx, file in enumerate(media_files):
-                metadata = metadata_list[idx]
-                media_instance = save_project_media(
-                    file=file,
-                    project_id=project.id,
-                    media_data={
-                        "title": metadata.get("title", f"File {idx}"),
-                        "description": metadata.get("description", f"Uploaded file {file.filename}"),
-                        "order": idx,
-                    },
-                )
-                db.add(media_instance)
+                if file.filename in files_to_add:
+                    metadata = metadata_list[idx] if metadata_list else {}
+                    media_instance = save_project_media(
+                        file=file,
+                        project_id=project.id,
+                        media_data={
+                            "title": metadata.get("title", f"File {idx}"),
+                            "description": metadata.get("description", f"Uploaded file {file.filename}"),
+                            "order": idx,
+                        },
+                    )
+                    db.add(media_instance)
+
+            db.commit()
+
         except json.JSONDecodeError:
             raise HTTPException(status_code=400, detail="Invalid media_metadata format. Must be a JSON array.")
 
     if links:
         try:
             link_list = json.loads(links)
+            current_links = db.query(ProjectMedia).filter(ProjectMedia.project_id == project_id, ProjectMedia.file_url != None).all()
+            current_link_urls = {link.file_url for link in current_links}
 
-            db.query(ProjectMedia).filter(ProjectMedia.project_id == project_id, ProjectMedia.file_url != None).delete()
+            links_to_add = {link_data.get("link") for link_data in link_list} - current_link_urls
+            links_to_remove = current_link_urls - {link_data.get("link") for link_data in link_list}
+
+            if links_to_remove:
+                db.query(ProjectMedia).filter(
+                    ProjectMedia.project_id == project_id,
+                    ProjectMedia.file_url.in_(links_to_remove)
+                ).delete()
 
             for idx, link_data in enumerate(link_list):
-                media_instance = ProjectMedia(
-                    project_id=project.id,
-                    title=link_data.get("title", f"Link {idx}"),
-                    description=link_data.get("description", ""),
-                    file_url=link_data.get("link"),
-                    order=idx,
-                )
-                db.add(media_instance)
+                if link_data.get("link") in links_to_add:
+                    media_instance = ProjectMedia(
+                        project_id=project.id,
+                        title=link_data.get("title", f"Link {idx}"),
+                        description=link_data.get("description", ""),
+                        file_url=link_data.get("link"),
+                        order=idx,
+                    )
+                    db.add(media_instance)
+
+            db.commit()
+
         except json.JSONDecodeError:
             raise HTTPException(status_code=400, detail="Invalid links format. Must be a JSON array.")
-    db.commit()
 
     return {"message": "Project updated successfully", "project_id": project.id}
 

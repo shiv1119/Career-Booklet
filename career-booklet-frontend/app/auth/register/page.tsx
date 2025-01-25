@@ -42,7 +42,7 @@ import { useSession } from 'next-auth/react';
       if (!email) return;
 
       try {
-        const response = await fetch('http://127.0.0.1:8000/api/check-user', {
+        const response = await fetch('http://127.0.0.1:9000/api/check-user', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -104,7 +104,7 @@ import { useSession } from 'next-auth/react';
       };
 
       try {
-        const response = await fetch('http://127.0.0.1:8000/api/users', {
+        const response = await fetch('http://127.0.0.1:9000/api/users', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

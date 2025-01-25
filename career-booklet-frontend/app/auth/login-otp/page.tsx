@@ -68,7 +68,7 @@ const LoginWithOtp: React.FC = () => {
 
   const handleSendOtp = async (data: FormData) => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/auth/send-otp?email_or_phone=${data?.emailOrPhone}&purpose=login`, {
+      const response = await fetch(`http://127.0.0.1:9000/api/auth/send-otp?email_or_phone=${data?.emailOrPhone}&purpose=login`, {
         method: 'POST',
       });
 

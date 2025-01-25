@@ -342,3 +342,29 @@ class CourseAssociation(Base):
     updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     course = relationship("Course", back_populates="associations")
+
+class TestScore(Base):
+    __tablename__ = "test_scores"
+
+    id = Column(Integer, primary_key=True, index=True)
+    auth_user_id = Column(Integer, nullable=False)
+    title = Column(String, nullable=False)
+    score = Column(String, nullable=False)
+    test_date = Column(DateTime, nullable=True) 
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    associations = relationship("TestScoreAssociation", back_populates="test_score", cascade="all, delete-orphan")
+
+class TestScoreAssociation(Base):
+    __tablename__ = "test_score_associations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    test_score_id = Column(Integer, ForeignKey("test_scores.id", ondelete="CASCADE"))
+    associated_type = Column(String, nullable=False)
+    associated_id = Column(Integer, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    test_score = relationship("TestScore", back_populates="associations")

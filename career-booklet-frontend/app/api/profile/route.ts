@@ -45,7 +45,7 @@ export const getProfile = async (token: any) => {
 
 export const updateProfile = async (formData: any, token: any) => {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APIGATEWAY_SERVICES}?service=profile_service&path=/api/profile/`, {
+    const response = await fetch(`http://127.0.0.1:9002?service=profile_service&path=/api/profile/`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -70,7 +70,7 @@ export const updateProfileImage = async (profileImage: any, token: any) => {
   const formData = new FormData();
   formData.append("profile_image",profileImage);
   try{
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APIGATEWAY_SERVICES}?service=profile_service&path=/api/update-profile-image/`, {
+    const response = await fetch(`http://127.0.0.1:9002?service=profile_service&path=/api/update-profile-image/`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -93,7 +93,7 @@ export const updateBackgroundImage = async (backgroundImage: any, token: any) =>
   const formData = new FormData();
   formData.append("profile_background_image",backgroundImage);
   try{
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APIGATEWAY_SERVICES}?service=profile_service&path=/api/update-background-image/`, {
+    const response = await fetch(`http://127.0.0.1:9002?service=profile_service&path=/api/update-background-image/`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -114,7 +114,7 @@ export const updateBackgroundImage = async (backgroundImage: any, token: any) =>
 
 export const getAbout = async (token: any) => {
   try{
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APIGATEWAY_SERVICES}?service=profile_service&path=/api/profile/about/`, {
+    const response = await fetch(`http://127.0.0.1:9002?service=profile_service&path=/api/profile/about/`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -134,7 +134,7 @@ export const getAbout = async (token: any) => {
 
 export const createAbout = async (token: any, formData: any) => {
   try{
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APIGATEWAY_SERVICES}?services=profile_services&path=/api/profile/about/`,{
+    const response = await fetch(`http://127.0.0.1:9002?services=profile_services&path=/api/profile/about/`,{
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -155,7 +155,7 @@ export const createAbout = async (token: any, formData: any) => {
 
 export const updateAbout = async (token: any, formData: any) => {
   try{
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APIGATEWAY_SERVICES}?services=profile_service&path=/api/profile/about/`, {
+    const response = await fetch(`http://127.0.0.1:9002?services=profile_service&path=/api/profile/about/`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
