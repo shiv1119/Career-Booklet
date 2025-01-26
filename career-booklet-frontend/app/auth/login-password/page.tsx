@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaEnvelope, FaLock } from 'react-icons/fa';
-import { useRouter } from 'next/navigation';
+import { useRouter} from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
 import Link from 'next/link';
 
@@ -14,7 +14,8 @@ type FormData = {
 const LoginWithPassword: React.FC = () => {
   const { register, handleSubmit, formState: { errors }, setError } = useForm<FormData>();
   const router = useRouter();
-  const {status} = useSession()
+  const {status} = useSession();
+
     
   
     const isAuthenticated = status === 'authenticated';
@@ -24,14 +25,17 @@ const LoginWithPassword: React.FC = () => {
       }
     }, [isAuthenticated, router]);
   
+    const redirectUrl = localStorage.getItem('redirectUrl');
+  const parsedRedirectUrl = redirectUrl ? JSON.parse(redirectUrl) : null;
+  
 
   const onSubmit = async (data: FormData) => {
     const cleanedEmailOrPhone = data.emailOrPhone.replace(/\s+/g, '').split('').join('');
     signIn('credentials', {
         email_or_phone: cleanedEmailOrPhone,
         password: data.password,
-        redirect: false,
-        callbackUrl: '/',
+        redirect: !!parsedRedirectUrl,
+        callbackUrl: parsedRedirectUrl || '/',
     }).then((res) => {
         if (res?.error) {
           if(res?.error === 'MFA Required'){
@@ -40,7 +44,8 @@ const LoginWithPassword: React.FC = () => {
             setError('emailOrPhone', { message: res?.error });
           }
         } else{
-            router.push('/');
+            router.push(parsedRedirectUrl || '/'); 
+            localStorage.removeItem('redirectUrl');
         }
     });
   };

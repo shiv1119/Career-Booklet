@@ -1,4 +1,4 @@
-export const createProfile = async (formData: any, token: any) => {
+export const createProfile = async (formData: any, token: string) => {
     try {
       const response = await fetch(`http://127.0.0.1:9002?service=profile_service&path=/api/profile/`, {
         method: 'POST',
@@ -22,7 +22,7 @@ export const createProfile = async (formData: any, token: any) => {
     }
   };
 
-export const getProfile = async (token: any) => {
+export const getProfile = async (token: string) => {
     try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_APIGATEWAY_SERVICES}?service=profile_service&path=/api/profile/`, {
             method: 'GET',
@@ -43,7 +43,7 @@ export const getProfile = async (token: any) => {
 };
 
 
-export const updateProfile = async (formData: any, token: any) => {
+export const updateProfile = async (formData: any, token: string) => {
   try {
     const response = await fetch(`http://127.0.0.1:9002?service=profile_service&path=/api/profile/`, {
       method: 'PUT',
@@ -66,7 +66,7 @@ export const updateProfile = async (formData: any, token: any) => {
   }
 };
 
-export const updateProfileImage = async (profileImage: any, token: any) => {
+export const updateProfileImage = async (profileImage: any, token: string) => {
   const formData = new FormData();
   formData.append("profile_image",profileImage);
   try{
@@ -89,7 +89,7 @@ export const updateProfileImage = async (profileImage: any, token: any) => {
   }
 };
 
-export const updateBackgroundImage = async (backgroundImage: any, token: any) => {
+export const updateBackgroundImage = async (backgroundImage: any, token: string) => {
   const formData = new FormData();
   formData.append("profile_background_image",backgroundImage);
   try{
@@ -112,7 +112,7 @@ export const updateBackgroundImage = async (backgroundImage: any, token: any) =>
   }
 };
 
-export const getAbout = async (token: any) => {
+export const getAbout = async (token: string) => {
   try{
     const response = await fetch(`http://127.0.0.1:9002?service=profile_service&path=/api/profile/about/`, {
       method: 'GET',
@@ -132,7 +132,7 @@ export const getAbout = async (token: any) => {
   }
 };
 
-export const createAbout = async (token: any, formData: any) => {
+export const createAbout = async (token: string, formData: any) => {
   try{
     const response = await fetch(`http://127.0.0.1:9002?services=profile_services&path=/api/profile/about/`,{
       method: 'POST',
@@ -153,7 +153,7 @@ export const createAbout = async (token: any, formData: any) => {
   }
 }
 
-export const updateAbout = async (token: any, formData: any) => {
+export const updateAbout = async (token: string, formData: any) => {
   try{
     const response = await fetch(`http://127.0.0.1:9002?services=profile_service&path=/api/profile/about/`, {
       method: 'PUT',
