@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { FaEnvelope, FaPhoneAlt } from 'react-icons/fa';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
+import { sendOtp } from '@/app/api/auth_service_others/route';
 
 type FormData = {
   emailOrPhone: string;
@@ -49,21 +50,12 @@ const MultiFactorVerification: React.FC = () => {
   };
 
   const handleSendOtp = async (data: FormData) => {
-    try {
-      const response = await fetch(
-        `http://127.0.0.1:9000/api/auth/send-otp?email_or_phone=${data.emailOrPhone}&purpose=multi_factor_login`,
-        { method: 'POST' }
-      );
-
-      if (response.ok) {
-        setOtpSent(true);
-        setCountdown(60);
-      } else {
-        setError('emailOrPhone', { message: 'Failed to send OTP. Please check the email or phone number.' });
-      }
-    } catch (error) {
-      console.error('Error during OTP send:', error);
-      setError('emailOrPhone', { message: 'An unexpected error occurred. Please try again later.' });
+    const success = await sendOtp(data.emailOrPhone, "multi_factor_login");
+    if (success) {
+      setOtpSent(true);
+      setCountdown(60);
+    } else {
+      setError('emailOrPhone', { message: 'Failed to send OTP' });
     }
   };
 
@@ -126,7 +118,9 @@ const MultiFactorVerification: React.FC = () => {
                     type="text"
                     maxLength={1}
                     className="w-9 h-9 py-3 text-center border text-sm font-bold rounded-lg dark:text-black focus:ring-blue-500"
-                    ref={(el) => (inputs.current[i] = el)}
+                    ref={(el) => {
+                      if (el) inputs.current[i] = el;
+                    }}
                     onKeyDown={(e) => handleKeyDown(i, e)}
                     onChange={(e) => handleInputChange(i, e)}
                   />

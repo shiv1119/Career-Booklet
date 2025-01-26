@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/layouts/Navbar"; 
-import { SessionProvider } from "next-auth/react";
 import BaseLayout from "@/components/layouts/base-layout";
 
 const geistSans = Geist({
@@ -26,9 +24,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
       <link href="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.css" rel="stylesheet" />
+      <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js"
+        async
+      ></script>
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white dark:bg-gray-800 dark:text-white`}
@@ -36,7 +37,6 @@ export default function RootLayout({
         <BaseLayout>
          {children}
         </BaseLayout>
-        <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.2/dist/flowbite.min.js"></script>
       </body>
     </html>
   );

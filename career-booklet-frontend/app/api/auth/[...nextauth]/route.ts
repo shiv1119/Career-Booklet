@@ -24,7 +24,7 @@ declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
       accessToken?: string;
-      id?:number;
+      id?: number;
     } & DefaultSession["user"];
   }
 }
@@ -39,28 +39,35 @@ const authOptions: NextAuthOptions = {
         login_otp: { label: "LoginOTP", type: "string" },
         email: { label: "ActivationEmail", type: "string" },
         activation_otp: { label: "ActivationOTP", type: "string" },
+        recover_otp: {label: "RecoverOTP", type: "string"},
       },
       async authorize(credentials) {
         let url = "";
         let body = {};
 
         if (credentials?.password) {
-          url = "http://127.0.0.1:9000/api/auth/login-password";
+          url = `${process.env.NEXT_PUBLIC_AUTH_SERVICE}/api/auth/login-password`;
           body = {
             email_or_phone: credentials.email_or_phone,
             password: credentials.password,
           };
         } else if (credentials?.activation_otp) {
-          url = "http://127.0.0.1:9000/api/user/activate";
+          url = `${process.env.NEXT_PUBLIC_AUTH_SERVICE}/api/user/activate`;
           body = {
             email: credentials.email,
             otp: credentials.activation_otp,
           };
         } else if (credentials?.login_otp) {
-          url = "http://127.0.0.1:9000/api/auth/login-otp";
+          url = `${process.env.NEXT_PUBLIC_AUTH_SERVICE}/api/auth/login-otp`;
           body = {
             email_or_phone: credentials.email_or_phone,
             otp: credentials.login_otp,
+          };
+        } else if (credentials?.recover_otp){
+          url = `${process.env.NEXT_PUBLIC_AUTH_SERVICE}/api/auth/recover-account`;
+          body = {
+            email: credentials.email,
+            otp: credentials.recover_otp,
           };
         }
 
@@ -87,11 +94,11 @@ const authOptions: NextAuthOptions = {
       },
     }),
   ],
-  
+
   callbacks: {
     async jwt({ token, user }) {
       const currentTime = Date.now();
-      
+
       if (user && "tokens" in user) {
         const userWithTokens = user as UserWithTokens;
         token.id = userWithTokens.id;
@@ -104,14 +111,17 @@ const authOptions: NextAuthOptions = {
 
       if (typeof token.accessTokenExpires === "number" && currentTime > token.accessTokenExpires) {
         try {
-          const res = await fetch("http://127.0.0.1:9000/api/auth/refresh-token", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-            body: JSON.stringify({ refresh_token: token.refreshToken }),
-          });
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_AUTH_SERVICE}/api/auth/refresh-token`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: JSON.stringify({ refresh_token: token.refreshToken }),
+            }
+          );
 
           if (res.ok) {
             const data = await res.json();
@@ -144,6 +154,7 @@ const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/auth/login-password",
     newUser: "/auth/register",
+    signOut:'/',
   },
 };
 

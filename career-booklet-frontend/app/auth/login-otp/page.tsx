@@ -3,7 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaEnvelope } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
-import { signIn , useSession} from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
+import { sendOtp } from '@/app/api/auth_service_others/route'; // Import the sendOtp function
 
 type FormData = {
   emailOrPhone: string;
@@ -13,94 +14,98 @@ type FormData = {
 const LoginWithOtp: React.FC = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [countdown, setCountdown] = useState(60);
-  const inputs = useRef<(HTMLInputElement | null)[]>([]);
+  const inputs = useRef<HTMLInputElement[]>([]); 
   const { register, handleSubmit, formState: { errors }, setError } = useForm<FormData>();
   const router = useRouter();
-  const {status} = useSession()
-  
+  const { status } = useSession();
 
   const isAuthenticated = status === 'authenticated';
+
   useEffect(() => {
     if (isAuthenticated) {
       router.replace('/');
     }
   }, [isAuthenticated, router]);
+
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (otpSent && countdown > 0) {
-      timer = setInterval(() => setCountdown(prev => prev - 1), 1000);
+      timer = setInterval(() => setCountdown((prev) => prev - 1), 1000);
     }
     return () => clearInterval(timer);
   }, [otpSent, countdown]);
 
-    const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Backspace' && index > 0 && !e.currentTarget.value) {
-        inputs.current[index - 1]?.focus();
-      }
-    };
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && index > 0 && !e.currentTarget.value) {
+      inputs.current[index - 1]?.focus();
+    }
+  };
 
-    const handleInputChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.value && index < inputs.current.length - 1) {
-          inputs.current[index + 1]?.focus();
-        }
-    };
-
+  const handleInputChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.value && index < inputs.current.length - 1) {
+      inputs.current[index + 1]?.focus();
+    }
+  };
+  const redirectUrl = localStorage.getItem('redirectUrl') 
+  ? JSON.parse(localStorage.getItem('redirectUrl') as string) 
+  : '/';
   const onSubmit = async (data: FormData) => {
     if (!otpSent) {
       handleSendOtp(data);
     } else {
-      const otp = inputs.current.map(input => input?.value).join('');
+      const otp = inputs.current.map((input) => input?.value).join('');
       signIn('credentials', {
         email_or_phone: data.emailOrPhone,
         login_otp: otp,
-        redirect: false,
-        callbackUrl: '/'
-      }).then(res => {
+        redirect: !!redirectUrl,
+        callbackUrl: redirectUrl,
+      }).then((res) => {
         if (res?.error) {
           setError('otp', { message: res.error });
         } else {
-          console.log('');
-          router.push('/');
+          router.push(redirectUrl);
+          localStorage.removeItem('redirectUrl');
         }
       });
     }
   };
 
   const handleSendOtp = async (data: FormData) => {
-    try {
-      const response = await fetch(`http://127.0.0.1:9000/api/auth/send-otp?email_or_phone=${data?.emailOrPhone}&purpose=login`, {
-        method: 'POST',
-      });
-
-      if (response.ok) {
-        setOtpSent(true);
-        setCountdown(60);
-      } else {
-        setError('emailOrPhone', { message: 'Failed to send OTP' });
-      }
-    } catch (error) {
-      console.error('Error during OTP send:', error);
+    const success = await sendOtp(data.emailOrPhone, "login");
+    if (success) {
+      setOtpSent(true);
+      setCountdown(60);
+    } else {
+      setError('emailOrPhone', { message: 'Failed to send OTP' });
     }
   };
 
   return (
-    <div className="min-h-screen flex justify-center dark:bg-grey-800">
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 p-8 w-full max-w-sm">
-        {errors.emailOrPhone && <p className="text-sm mb-2 text-red-500">{errors.emailOrPhone.message}</p>}
-        <div className="mb-5 flex items-center">
-          <div className="w-full">
-            <div className='flex items-center'>
-              <FaEnvelope className="mr-3 mb-2 text-gray-500" />
-              <label htmlFor="emailOrPhone" className="block text-sm font-medium text-gray-900 dark:text-white mb-2">Email or Phone</label>
-            </div>
-            <input
-              type="text"
-              id="emailOrPhone"
-              className="text-sm dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-300 text-gray-900 rounded-lg pl-3 py-2 w-full focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-              placeholder="name@domain.com or +91 1234567890"
-              {...register('emailOrPhone', { required: 'Email or Phone is required' })}
-            />
+    <div className="min-h-screen flex justify-center dark:bg-gray-800">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="bg-white dark:bg-gray-800 p-2 w-full max-w-sm rounded-lg"
+      >
+        {errors.emailOrPhone && (
+          <p className="text-sm mb-2 text-red-500">{errors.emailOrPhone.message}</p>
+        )}
+        <div className="mb-5">
+          <div className="flex items-center mb-2">
+            <FaEnvelope className="mr-3 text-gray-500" />
+            <label
+              htmlFor="emailOrPhone"
+              className="block text-sm font-medium text-gray-900 dark:text-white"
+            >
+              Email or Phone
+            </label>
           </div>
+          <input
+            type="text"
+            id="emailOrPhone"
+            className="text-sm dark:text-white bg-gray-50 dark:bg-gray-800 border border-gray-300 text-gray-900 rounded-lg pl-3 py-2 w-full focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+            placeholder="name@domain.com or +91 1234567890"
+            {...register('emailOrPhone', { required: 'Email or Phone is required' })}
+          />
         </div>
 
         {otpSent && (
@@ -112,7 +117,9 @@ const LoginWithOtp: React.FC = () => {
                   type="text"
                   maxLength={1}
                   className="w-9 h-9 py-3 text-center border text-sm font-bold rounded-lg dark:text-black focus:ring-blue-500"
-                  ref={(el) => (inputs.current[i] = el)}
+                  ref={(el) => {
+                    if (el) inputs.current[i] = el;
+                  }}
                   onKeyDown={(e) => handleKeyDown(i, e)}
                   onChange={(e) => handleInputChange(i, e)}
                 />

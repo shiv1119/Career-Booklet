@@ -41,7 +41,7 @@ const ResetPassword: React.FC = () => {
     setMessage(null);
     try {
       const response = await fetch(
-        `http://127.0.0.1:9000/api/auth/send-otp?email_or_phone=${encodeURIComponent(email)}&purpose=reset-password`,
+        `${process.env.NEXT_PUBLIC_AUTH_SERVICE}/api/auth/send-otp?email_or_phone=${encodeURIComponent(email)}&purpose=reset-password`,
         { method: 'POST' }
       );
 
@@ -63,7 +63,7 @@ const ResetPassword: React.FC = () => {
     setIsSubmitting(true);
     setMessage(null);
     try {
-      const response = await fetch('http://127.0.0.1:9000/api/auth/reset-password', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_AUTH_SERVICE}/api/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email, otp:otp, new_password: newPassword }),
@@ -88,9 +88,8 @@ const ResetPassword: React.FC = () => {
     setIsResending(true);
     setMessage(null);
     try {
-        const purpose = 'reset_password';
       const response = await fetch(
-        `http://127.0.0.1:9000/api/auth/send-otp?email_or_phone=${encodeURIComponent(email)}&purpose=${encodeURIComponent('reset_password')}`,
+        `${process.env.NEXT_PUBLIC_AUTH_SERVICE}/api/auth/send-otp?email_or_phone=${encodeURIComponent(email)}&purpose=${encodeURIComponent('reset_password')}`,
         { method: 'POST' }
       );
 
@@ -157,7 +156,9 @@ const ResetPassword: React.FC = () => {
                   maxLength={1}
                   className="block w-9 h-9 text-center border border-gray-300 rounded-lg"
                   required
-                  ref={(el) => (inputs.current[i] = el)}
+                  ref={(el) => {
+                    if (el) inputs.current[i] = el;
+                  }}
                   onChange={(e) => handleInputChange(i, e)}
                   onKeyDown={(e) => handleKeyDown(i, e)}
                 />

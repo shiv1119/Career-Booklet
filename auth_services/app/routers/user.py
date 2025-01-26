@@ -379,6 +379,7 @@ async def enable_mfa(user_id: int, enable: bool, db: db_dependency):
     user.is_multi_factor = enable
     db.commit()
     status_message = "enabled" if enable else "disabled"
+    print(status_message)
     return {"message": f"Multi-factor authentication {status_message}."}
 
 
@@ -428,6 +429,20 @@ async def validate_token(request: TokenValidationRequest, db:db_dependency):
 
     return {"user_id": user_id}
 
+@router.get("/auth/mfa-status/", status_code=status.HTTP_200_OK)
+async def check_mfa(user_id: int, db: db_dependency):
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.deleted_at:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not user.is_active:
+        raise HTTPException(status_code=404, detail="User account is not activated")
+    print(user.is_multi_factor)
+    return {"enabled": user.is_multi_factor}
 
 
 
