@@ -2,7 +2,7 @@
 import React, { ReactNode, useEffect, useState } from "react";
 import { FaEnvelope, FaMoon, FaSun } from 'react-icons/fa';
 // import { GoVideo } from 'react-icons/go';
-import { IoBriefcaseSharp, IoSettings } from "react-icons/io5";
+import { IoSettings } from "react-icons/io5";
 import { MdHelp } from "react-icons/md";
 import Link from "next/link";
 import { useSession,signOut } from "next-auth/react";
@@ -40,7 +40,7 @@ const categoryToggleDropdown = () => {
     signOut({ 
       redirect: true,
      });
-     router.push('/')
+     router.push('/');
   };
 
   useEffect(() => {
@@ -81,7 +81,7 @@ const categoryToggleDropdown = () => {
               
               {!isLoading && <>
               {!isAuthenticated && (
-                <div className=" dark:text-white hover:font-bold">
+                <div className=" dark:text-white">
                   <Link href='/auth/login-password'>Sign Up</Link>
                 </div>
               )}
@@ -100,7 +100,6 @@ const categoryToggleDropdown = () => {
                       <span className="sr-only">Open user menu</span>
                       <img className="w-8 h-8 rounded-full" src="https://flowbite.com/docs/images/people/profile-picture-5.jpg" alt="user photo" />
                     </button>
-
                     {isDropdownOpen && (
                       <div className="absolute right-0 mt-2 w-auto bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-lg">
                         <ul className="py-1 text-sm">
@@ -190,9 +189,32 @@ const categoryToggleDropdown = () => {
 
               {isBlogsDropdownOpen && (
                 <ul className="pl-6">
+                  {isAuthenticated && (<li>
+                    <Link
+                      href="/posts/create-blog"
+                      className="flex justify-between px-2 py-1 text-gray-700 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      Create Blog
+                      <svg
+                        className="w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2}
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                    </Link>
+                  </li>
+                  )}
                   <li>
                     <Link
-                      href="/posts/category1"
+                      href="/posts/trending-blogs"
                       className="flex justify-between px-2 py-1 text-gray-700 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       Trending 
@@ -214,7 +236,7 @@ const categoryToggleDropdown = () => {
                   </li>
                   <li>
                     <Link
-                      href="/posts/category2"
+                      href="/posts/latest-blogs"
                       className="flex justify-between px-2 py-1  text-gray-700 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       Latest blogs
@@ -374,7 +396,7 @@ const categoryToggleDropdown = () => {
       <div className="px-2 py-2 sm:ml-64 dark:bg-gray-800 dark:text-white">
         <div className="px-2 py-2 rounded-lg dark:border-gray-700 mt-14">
         <div className="grid grid-cols-12 gap-4 mb-2">
-          <div className="col-span-12 md:col-span-12 lg:col-span-8">
+          <div className="col-span-12 md:col-span-12 lg:col-span-8 lg:pl-4">
             {children}
           </div>
           <div className="col-span-12 lg:col-span-4">

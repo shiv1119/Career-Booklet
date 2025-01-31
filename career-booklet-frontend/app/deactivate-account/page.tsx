@@ -5,6 +5,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { deactivateAccount, sendOtp } from '@/app/api/auth_service_others/route';
 import { useRouter } from 'next/navigation';
 
+
 const DeactivateAccount = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [countdown, setCountdown] = useState(60);
@@ -21,6 +22,12 @@ const DeactivateAccount = () => {
     }
   }, [session]);
 
+  const handleLogout = () => {
+    signOut({ 
+      redirect: true,
+     });
+     router.push('/');
+  };
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (otpSent && countdown > 0) {
@@ -54,11 +61,7 @@ const DeactivateAccount = () => {
         setMessage({ text: 'Account deactivated successfully...', type: 'success' });
 
         setTimeout(() => {
-          signOut({ 
-            redirect: false,
-            callbackUrl:'/'
-            });
-            router.push('/');
+          handleLogout();
         }, 2000);
       } catch (error: unknown) {
         if (error instanceof Error) {
@@ -145,6 +148,9 @@ const DeactivateAccount = () => {
                   />
                 ))}
               </div>
+              <p id="helper-text-explanation" className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Please enter the 6-digit code we sent via email or phone.
+              </p>
               <button
                 type="button"
                 onClick={() => countdown === 0 && handleSendOtp()}

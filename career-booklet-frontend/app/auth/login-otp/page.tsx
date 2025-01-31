@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { FaEnvelope } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
-import { sendOtp } from '@/app/api/auth_service_others/route'; // Import the sendOtp function
+import { sendOtp } from '@/app/api/auth_service_others/route';
 
 type FormData = {
   emailOrPhone: string;
@@ -14,8 +14,10 @@ type FormData = {
 const LoginWithOtp: React.FC = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [countdown, setCountdown] = useState(60);
-  const inputs = useRef<HTMLInputElement[]>([]); 
-  const { register, handleSubmit, formState: { errors }, setError } = useForm<FormData>();
+  const [isResending, setIsResending] = useState<boolean>(false);
+  const inputs = useRef<HTMLInputElement[]>([]);
+  const [message, setMessage] = useState<{ text: string; type: 'error' | 'success' } | null>(null);
+  const { register, handleSubmit, formState: { errors }, setError, getValues } = useForm<FormData>();
   const router = useRouter();
   const { status } = useSession();
 
@@ -46,12 +48,14 @@ const LoginWithOtp: React.FC = () => {
       inputs.current[index + 1]?.focus();
     }
   };
+
   const redirectUrl = localStorage.getItem('redirectUrl') 
-  ? JSON.parse(localStorage.getItem('redirectUrl') as string) 
-  : '/';
+    ? JSON.parse(localStorage.getItem('redirectUrl') as string) 
+    : '/';
+
   const onSubmit = async (data: FormData) => {
     if (!otpSent) {
-      handleSendOtp(data);
+      await handleSendOtp(data);
     } else {
       const otp = inputs.current.map((input) => input?.value).join('');
       signIn('credentials', {
@@ -71,12 +75,44 @@ const LoginWithOtp: React.FC = () => {
   };
 
   const handleSendOtp = async (data: FormData) => {
-    const success = await sendOtp(data.emailOrPhone, "login");
-    if (success) {
-      setOtpSent(true);
-      setCountdown(60);
-    } else {
-      setError('emailOrPhone', { message: 'Failed to send OTP' });
+    try {
+      const success = await sendOtp(data.emailOrPhone, "login");
+      if (success) {
+        setOtpSent(true);
+        setCountdown(60);
+        setMessage({ text: 'OTP sent successfully!', type: 'success' }); // ✅ Fix: Show success message
+      } else {
+        setError('emailOrPhone', { message: 'Failed to send OTP' });
+      }
+    } catch (error) {
+      setMessage({ text: 'An error occurred while sending OTP. Please try again.' + error, type: 'error' });
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setIsResending(true);
+    setMessage(null);
+    try {
+      const emailOrPhone = getValues('emailOrPhone'); // Fetch the current emailOrPhone from the form
+      if (!emailOrPhone) {
+        setMessage({ text: 'Please enter your email or phone number.', type: 'error' });
+        setIsResending(false);
+        return;
+      }
+
+      const success = await sendOtp(emailOrPhone, 'login');
+      if (success) {
+        setMessage({ text: 'OTP resent successfully!', type: 'success' });
+        setCountdown(60);
+        setOtpSent(true);
+      } else {
+        setMessage({ text: 'Failed to resend OTP. Please try again.', type: 'error' });
+      }
+    } catch (error) {
+      console.error('Error resending OTP:', error);
+      setMessage({ text: 'An error occurred while resending OTP. Please try again.', type: 'error' });
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -84,11 +120,21 @@ const LoginWithOtp: React.FC = () => {
     <div className="min-h-screen flex justify-center dark:bg-gray-800">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="bg-white dark:bg-gray-800 p-2 w-full max-w-sm rounded-lg"
+        className="bg-white dark:bg-gray-800 p-4 w-full max-w-sm rounded-lg"
       >
         {errors.emailOrPhone && (
           <p className="text-sm mb-2 text-red-500">{errors.emailOrPhone.message}</p>
         )}
+        {message && (
+            <div
+              className={`mb-4 p-2 text-sm rounded ${
+                message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              }`}
+            >
+              {message.text}
+            </div>
+          )}
+
         <div className="mb-5">
           <div className="flex items-center mb-2">
             <FaEnvelope className="mr-3 text-gray-500" />
@@ -125,17 +171,19 @@ const LoginWithOtp: React.FC = () => {
                 />
               ))}
             </div>
+            <p id="helper-text-explanation" className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Please enter the 6-digit code we sent via email or phone.
+              </p>
             <button
               type="button"
-              onClick={() => countdown === 0 && handleSendOtp({ emailOrPhone: '' })}
-              disabled={countdown > 0}
+              onClick={handleResendOtp}
+              disabled={countdown > 0 || isResending}
               className="text-sm text-blue-500 mt-2"
             >
               {countdown > 0 ? `Resend OTP (${countdown}s)` : 'Resend OTP'}
             </button>
           </div>
         )}
-
         <button
           type="submit"
           className="text-sm w-full bg-blue-600 text-white py-2.5 px-5 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"

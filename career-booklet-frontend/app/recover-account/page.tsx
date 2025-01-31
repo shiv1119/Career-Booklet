@@ -166,7 +166,7 @@ const RecoverAccount: React.FC = () => {
                 id="email"
                 value={emailOrPhone}
                 onChange={(e) => setEmailOrPhone(e.target.value)}
-                className="text-sm bg-gray-50 border border-gray-300 rounded-lg py-2 px-3 w-full focus:ring-blue-500"
+                className="text-sm bg-gray-100 border border-gray-300 rounded-lg py-2 px-3 w-full focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-300"
                 placeholder="Enter email"
               />
             </div>
@@ -190,7 +190,7 @@ const RecoverAccount: React.FC = () => {
                     key={i}
                     type="text"
                     maxLength={1}
-                    className="block w-9 h-9 text-center border rounded-lg"
+                    className="block w-9 h-9 text-center border rounded-lg dark:bg-gray-800 dark:text-gray-300"
                     ref={(el) => {
                       if (el) inputs.current[i] = el;
                     }}
@@ -199,11 +199,14 @@ const RecoverAccount: React.FC = () => {
                   />
                 ))}
               </div>
+              <p id="helper-text-explanation" className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Please enter the 6-digit code we sent via email or phone.
+              </p>
               {timer === 0 ? (
                 <button
                   type="button"
                   onClick={handleResendOtp}
-                  className="w-full bg-gray-300 text-gray-700 py-2.5 rounded-lg hover:bg-gray-400"
+                  className="text-blue-600 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-gray-300"
                   disabled={isResending}
                 >
                   {isResending ? 'Resending...' : 'Resend OTP'}
