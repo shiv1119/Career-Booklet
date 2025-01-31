@@ -35,6 +35,12 @@ const DeleteAccount = () => {
     }
   };
 
+    const handleLogout = () => {
+      signOut({ 
+        redirect: true,
+       });
+       router.push('/');
+    };
   const handleInputChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.value && index < inputs.current.length - 1) {
       inputs.current[index + 1]?.focus();
@@ -54,11 +60,7 @@ const DeleteAccount = () => {
         setMessage({ text: 'Account deleted successfully...', type: 'success' });
 
         setTimeout(() => {
-          signOut({ 
-            redirect: true,
-            callbackUrl:'/'
-            });
-            router.push('/');
+          handleLogout();
         }, 2000);
       } catch (error: unknown) {
         if (error instanceof Error) {
@@ -76,7 +78,7 @@ const DeleteAccount = () => {
       return;
     }
 
-    const success = await sendOtp(emailOrPhone, 'deactivate_account');
+    const success = await sendOtp(emailOrPhone, 'delete_account');
     if (success) {
       setMessage({ text: 'OTP sent successfully!', type: 'success' });
       setOtpSent(true);
@@ -148,6 +150,9 @@ const DeleteAccount = () => {
                   />
                 ))}
               </div>
+              <p id="helper-text-explanation" className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Please enter the 6-digit code we sent via email or phone.
+              </p>
               <button
                 type="button"
                 onClick={() => countdown === 0 && handleSendOtp()}

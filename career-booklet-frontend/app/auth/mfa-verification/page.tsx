@@ -15,9 +15,11 @@ type FormData = {
 const MultiFactorVerification: React.FC = () => {
   const [otpSent, setOtpSent] = useState(true);
   const [countdown, setCountdown] = useState(60);
+  const [isResending, setIsResending] = useState(false);
+  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [inputType, setInputType] = useState<'email' | 'phone'>('email');
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
-  const { register, handleSubmit, formState: { errors }, setValue, setError } = useForm<FormData>();
+  const { register, handleSubmit, setValue, setError, getValues } = useForm<FormData>();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -50,12 +52,48 @@ const MultiFactorVerification: React.FC = () => {
   };
 
   const handleSendOtp = async (data: FormData) => {
-    const success = await sendOtp(data.emailOrPhone, "multi_factor_login");
-    if (success) {
-      setOtpSent(true);
-      setCountdown(60);
-    } else {
-      setError('emailOrPhone', { message: 'Failed to send OTP' });
+    try {
+      if (!data.emailOrPhone) {
+        setMessage({ text: 'Email or Phone is required.', type: 'error' });
+        return;
+      }
+
+      const success = await sendOtp(data.emailOrPhone, "multi_factor_login");
+      if (success) {
+        setOtpSent(true);
+        setCountdown(60);
+        setMessage({ text: 'OTP sent successfully!', type: 'success' });
+      } else {
+        setMessage({ text: 'Failed to send OTP. Please try again.', type: 'error' });
+      }
+    } catch (error) {
+      setMessage({ text: 'An error occurred while sending OTP.' + error, type: 'error' });
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setIsResending(true);
+    setMessage(null);
+    try {
+      const emailOrPhone = getValues('emailOrPhone'); // Ensure emailOrPhone is fetched
+      if (!emailOrPhone) {
+        setMessage({ text: 'Please enter your email or phone number.', type: 'error' });
+        setIsResending(false);
+        return;
+      }
+
+      const success = await sendOtp(emailOrPhone, 'multi_factor_login');
+      if (success) {
+        setMessage({ text: 'OTP resent successfully!', type: 'success' });
+        setCountdown(60);
+        setOtpSent(true);
+      } else {
+        setMessage({ text: 'Failed to resend OTP. Please try again.', type: 'error' });
+      }
+    } catch (error) {
+      setMessage({ text: 'An error occurred while resending OTP.' + error, type: 'error' });
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -72,6 +110,7 @@ const MultiFactorVerification: React.FC = () => {
       }).then((res) => {
         if (res?.error) {
           setError('otp', { message: 'Invalid OTP. Please try again.' });
+          setMessage({ text: 'Invalid OTP. Please try again.', type: 'error' });
         } else {
           router.push('/');
         }
@@ -84,9 +123,18 @@ const MultiFactorVerification: React.FC = () => {
       <div className="text-center text-lg font-bold">
         <h2>MFA OTP Verification</h2>
       </div>
-      <div className="min-h-screen flex justify-center dark:bg-grey-800">
+      <div className="min-h-screen flex justify-center dark:bg-gray-800">
         <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 p-8 w-full max-w-sm">
-          {errors.emailOrPhone && <p className="text-sm mb-2 text-red-500">{errors.emailOrPhone.message}</p>}
+          {message && (
+            <div
+              className={`mb-4 p-2 text-sm rounded ${
+                message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              }`}
+            >
+              {message.text}
+            </div>
+          )}
+          
           <div className="mb-5 flex items-center">
             <div className="w-full">
               <div className="flex items-center">
@@ -126,10 +174,13 @@ const MultiFactorVerification: React.FC = () => {
                   />
                 ))}
               </div>
+              <p id="helper-text-explanation" className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Please enter the 6-digit code we sent via email or phone.
+              </p>
               <button
                 type="button"
-                onClick={() => countdown === 0 && handleSendOtp({ emailOrPhone: '' })}
-                disabled={countdown > 0}
+                onClick={handleResendOtp}
+                disabled={countdown > 0 || isResending}
                 className="text-sm text-blue-500 mt-2"
               >
                 {countdown > 0 ? `Resend OTP (${countdown}s)` : 'Resend OTP'}

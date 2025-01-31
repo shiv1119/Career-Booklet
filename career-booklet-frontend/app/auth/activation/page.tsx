@@ -109,7 +109,6 @@ useEffect(() => {
           setMessage({ text: res.error, type: 'error' });
         } else {
           console.log('');
-          router.push('/');
           setActivationSuccess(true);
         }
       });
@@ -126,7 +125,7 @@ useEffect(() => {
 
       if (response.ok) {
         setMessage({ text: 'OTP resent successfully!', type: 'success' });
-        setTimer(60); // Reset timer
+        setTimer(60); 
       } else {
         const errorData = await response.json();
         setMessage({ text: errorData.detail || 'Failed to resend OTP. Please try again.', type: 'error' });
@@ -143,7 +142,7 @@ useEffect(() => {
     <div className="min-h-screen">
       {!activationSuccess ? (
         <form className="max-w-sm mx-auto">
-          <div className="text-xl font-bold mb-6">Account Activation</div>
+          <div className="text-xl font-bold mb-6 text-center">Account Activation</div>
 
           {message && (
             <div
@@ -215,7 +214,7 @@ useEffect(() => {
                 <button
                   type="button"
                   onClick={handleResendOtp}
-                  className="w-full mt-4 bg-gray-300 text-gray-700 py-2.5 px-5 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                  className="text-blue-600 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-gray-300"
                   disabled={isResending}
                 >
                   {isResending ? 'Resending...' : 'Resend OTP'}

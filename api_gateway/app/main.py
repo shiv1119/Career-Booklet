@@ -9,7 +9,6 @@ load_dotenv()
 
 app = FastAPI(title="API Gateway")
 
-# Allowed origins for CORS
 allowed_origins = [
     os.environ.get("ALLOWED_ORIGINS"),
 ]
@@ -22,10 +21,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Microservices mapping
 services = {
     "auth_service": os.environ.get("AUTH_SERVICE"),
     "profile_service": os.environ.get("PROFILE_SERVICE"),
+    "blogs_services": os.environ.get("BLOGS_SERVICES")
+}
+
+public_routes = {
+    "latest_blogs": "/api/blogs/latest-blogs/",
+    "categories": "/api/blogs/categories/",
+    "get_blog_by_id": "/api/blogs/by_id/",
+    "increment_view": "/api/blogs/by_id/increment-view/",
+    "get_all_tags": "/api/tags/",
+    "trending_blogs": "/api/blogs/trending/"
 }
 
 AUTH_SERVICE_URL = f"{os.environ.get("AUTH_SERVICE")}/api/validate-token"
@@ -49,13 +57,13 @@ async def forward_request(service_url: str, request: Request, user_id: str, path
     async with httpx.AsyncClient() as client:
         try:
             headers = dict(request.headers)
-            headers["x-user-id"] = str(user_id) 
-
+            if user_id:
+                headers["x-user-id"] = str(user_id)
             response = await client.request(
                 method=request.method,
                 url=str(httpx.URL(service_url + path)),
                 headers=headers,
-                # params=request.query_params,
+                params={key: value for key, value in request.query_params.items() if key not in ["service", "path"]},  # Remove 'service' and 'path'
                 content=await request.body(),
             )
             return response
@@ -64,15 +72,17 @@ async def forward_request(service_url: str, request: Request, user_id: str, path
 
 @app.api_route("/", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def gateway(service: str, path: str, request: Request):
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Authorization header missing or invalid")
+    if path in public_routes.values():
+        user_id = None
+    else:
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Authorization header missing or invalid")
 
-    token = auth_header.split(" ")[1]
+        token = auth_header.split(" ")[1]
+        user_id = await validate_token(token)
 
-    user_id = await validate_token(token)
-
-    service_url = services[service]
+    service_url = services.get(service)
     if not service_url:
         raise HTTPException(status_code=404, detail="Service not found")
 

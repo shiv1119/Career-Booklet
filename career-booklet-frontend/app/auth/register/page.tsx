@@ -69,7 +69,7 @@ const Register = () => {
                   </button>
                   <button
                     onClick={() => setModal({ visible: false, content: null })}
-                    className="px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300"
+                    className="px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-200 dark:text-gray-700"
                   >
                     Close
                   </button>
