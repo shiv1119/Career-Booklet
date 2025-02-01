@@ -31,7 +31,7 @@ const ViewAnalytics: React.FC = () => {
   const [data, setData] = useState<AnalyticsData[]>([]);
   const [loading, setLoading] = useState(true);
   const [chartType, setChartType] = useState<"line" | "bar">("line");
-  const [selectedTimeRange, setSelectedTimeRange] = useState(timeRanges[0].value); // Default: 7d
+  const [selectedTimeRange, setSelectedTimeRange] = useState(timeRanges[0].value);
   const [percentageChange, setPercentageChange] = useState<number | null>(null);
   const { data: session } = useSession();
   const token = session?.user?.accessToken;
@@ -48,14 +48,13 @@ const ViewAnalytics: React.FC = () => {
         }
 
         const result = await fetchUserViews({ token, queryParams });
-        console.log("API Response:", result); // Add this log to inspect the response
 
         if (result && result.views) {
           setData(result.views);
         }
 
         if (result && result.percentage_change !== undefined) {
-          setPercentageChange(result.percentage_change); // Set percentage change from API response
+          setPercentageChange(result.percentage_change);
         }
 
       } catch (error) {
@@ -86,18 +85,18 @@ const ViewAnalytics: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto">
+    <div className="container mx-auto min-h-screen dark:text-white">
       <h1 className="text-2xl font-bold mb-4 text-center">📊 Blog View Analytics</h1>
       <div className="flex flex-wrap justify-center gap-4 mb-6">
         <div className="flex flex-wrap gap-2">
           {timeRanges.map((range) => (
             <button
               key={range.label}
-              className={`px-3 py-1 border rounded ${
+              className={`px-3 py-1 border rounded dark:border-gray-700 ${
                 selectedTimeRange.period === range.value.period &&
                 selectedTimeRange.group_by === range.value.group_by
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200"
+                  ? "bg-blue-500 text-white dark:bg-blue-600"
+                  : "bg-gray-200 dark:bg-gray-800 dark:text-gray-400"
               }`}
               onClick={() => setSelectedTimeRange(range.value)}
             >
@@ -109,7 +108,7 @@ const ViewAnalytics: React.FC = () => {
         <select
           value={chartType}
           onChange={(e) => setChartType(e.target.value as "line" | "bar")}
-          className="p-2 border rounded"
+          className="p-2 border rounded dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
         >
           <option value="line">📈 Line Chart</option>
           <option value="bar">📊 Bar Chart</option>
@@ -125,11 +124,11 @@ const ViewAnalytics: React.FC = () => {
         )}
       </div>
 
-      <div className="w-full h-96 bg-white shadow-xl rounded-lg pb-5 pt-8 pr-3 pl-2">
+      <div className="w-full h-96 bg-white shadow-xl rounded-lg pb-5 pt-8 pr-3 pl-2 dark:bg-gray-800 dark:shadow-gray-700">
         {loading ? (
-          <p className="text-center text-gray-600">Loading analytics...</p>
+          <p className="text-center text-gray-600 dark:text-gray-400">Loading analytics...</p>
         ) : data.length === 0 ? (
-          <p className="text-center text-red-500">No data available</p>
+          <p className="text-center text-red-500 dark:text-red-400">No data available</p>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             {chartType === "line" ? (
@@ -138,9 +137,20 @@ const ViewAnalytics: React.FC = () => {
                   dataKey={getXAxisDataKey()}
                   tickFormatter={formatXAxisTick}
                   label={{ value: selectedTimeRange.group_by, position: "bottom" }}
+                  className="dark:text-gray-400"
                 />
-                <YAxis label={{ value: "Views", angle: -90, position: "insideLeft" }} />
-                <Tooltip />
+                <YAxis label={{ value: "Views", angle: -90, position: "insideLeft" }} className="dark:text-gray-400" />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: '#2D3748',
+                    color: '#E2E8F0',
+                    borderRadius: '4px',
+                    border: '1px solid #4A5568',
+                  }}
+                  itemStyle={{
+                    color: '#E2E8F0',
+                  }}
+                />
                 <CartesianGrid strokeDasharray="3 3" />
                 <Line type="monotone" dataKey="total_views" stroke="#8884d8" />
               </LineChart>
@@ -150,9 +160,20 @@ const ViewAnalytics: React.FC = () => {
                   dataKey={getXAxisDataKey()}
                   tickFormatter={formatXAxisTick}
                   label={{ value: selectedTimeRange.group_by, position: "bottom" }}
+                  className="dark:text-gray-400"
                 />
-                <YAxis label={{ value: "Views", angle: -90, position: "insideLeft" }} />
-                <Tooltip />
+                <YAxis label={{ value: "Views", angle: -90, position: "insideLeft" }} className="dark:text-gray-400" />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: '#2D3748',
+                    color: '#E2E8F0',
+                    borderRadius: '4px',
+                    border: '1px solid #4A5568',
+                  }}
+                  itemStyle={{
+                    color: '#E2E8F0',
+                  }}
+                />
                 <CartesianGrid strokeDasharray="3 3" />
                 <Bar dataKey="total_views" fill="#82ca9d" />
               </BarChart>
