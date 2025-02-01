@@ -42,3 +42,17 @@ export interface Tag {
   id: number;
   name: string;
 }
+
+export interface FetchOptions {
+  token: string;
+  queryParams?: Record<string, string | number>;
+}
+
+export interface AnalyticsData {
+  day?: string | number;
+  month?: string | number; 
+  year?: string | number;
+  total_views: number;
+  percentage_change: number;
+}
+

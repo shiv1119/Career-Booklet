@@ -4,12 +4,15 @@ import { useParams } from "next/navigation";  // Import useParams from next/navi
 import { getBlogById } from "@/app/api/blogs_services/route";  
 import { BlogResponse } from "@/types";
 import { Eye } from "lucide-react";  
+import { useSession } from "next-auth/react";
+import Link from "next/link";
 
 const BlogDetails = () => {
+  const {data: session, status} = useSession()
   const [blog, setBlog] = useState<BlogResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+  const isAuthenticated = status === 'authenticated';
   const { blogId } = useParams(); 
   useEffect(() => {
     if (!blogId) return;
@@ -45,6 +48,9 @@ const BlogDetails = () => {
         </div>
         <div>Category: {blog.category}</div>
         <div>Subcategory: {blog.subcategory}</div>
+        {isAuthenticated && Number(session.user.id) === Number(blog.author) && (
+                <div><Link className="text-indigo-600" href={`/posts/view-analytics/${blog.id}`}>View analytics</Link></div>
+              )}
       </div>
 
       <div 

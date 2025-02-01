@@ -1,4 +1,4 @@
-import { BlogResponse, BlogCreateData, Category, Tag } from "@/types";
+import { BlogResponse, BlogCreateData, Category, Tag, FetchOptions } from "@/types";
 
 const API_GATEWAY_URL = process.env.NEXT_PUBLIC_API_GATEWAY;
 
@@ -167,12 +167,15 @@ export async function fetchTags(): Promise<Tag[]> {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch tags: ${response.statusText}`);
+      console.warn(`Warning: Failed to fetch tags. Status: ${response.status} - ${response.statusText}`);
+      return [];
     }
 
     const data = await response.json();
+    
     if (!Array.isArray(data)) {
-      throw new Error("Invalid response format for tags");
+      console.warn("Warning: Invalid response format for tags");
+      return [];
     }
 
     return data;
@@ -181,6 +184,7 @@ export async function fetchTags(): Promise<Tag[]> {
     return [];
   }
 }
+
 
 export async function getTrendingBlogs(
   days: number = 7,
@@ -234,3 +238,31 @@ export async function getTrendingBlogs(
   }
 }
 
+export async function fetchUserViews({ token, queryParams }: FetchOptions) {
+  const queryString = new URLSearchParams({
+    service: "blogs_services",
+    path: "/api/blogs/user/views/",
+    ...(queryParams || {}),
+  }).toString();
+
+  const url = `${API_GATEWAY_URL}?${queryString}`;
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch analytics: ${response.statusText}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching user views:", error);
+    throw error;
+  }
+}

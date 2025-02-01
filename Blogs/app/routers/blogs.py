@@ -1,10 +1,10 @@
 from fastapi import  APIRouter, Depends, status, HTTPException, Query, File, UploadFile, Request
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
-from typing import Annotated, List, Optional
+from typing import Annotated, List, Optional, Dict, Any, cast
 from app.models.blogs import Tag, Category, SubCategory, Blog, BlogView, blog_tag_association
 from app.schemas.blogs import BlogCreateSchema, BlogResponseSchema, CategorySchema, SubCategorySchema, TagResponse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.sql import func, extract
 from sqlalchemy.orm import joinedload
 from sqlalchemy import func, or_
@@ -377,8 +377,7 @@ def get_trending_blogs_for_category_or_subcategory(
         raise HTTPException(status_code=404, detail="No trending blogs found")
 
     return format_blogs_response(trending_blogs)
-
-@router.post("/blogs/by_id/increment-view/")
+@router.post("/blogs/by_id/increment-view/", response_model=dict)
 def increment_view(blog_id: int, db: Session = Depends(get_db)):
     today = datetime.now().date()
     blog = db.query(Blog).filter(Blog.id == blog_id).first()
@@ -408,38 +407,46 @@ def increment_view(blog_id: int, db: Session = Depends(get_db)):
     
     return {"message": "View count updated successfully", "view_count": view_entry.view_count}
 
-
-@router.get("/blogs/user/{user_id}/views", response_model=dict)
+@router.get("/blogs/user/views/", response_model=dict)
 def get_user_views(
-    user_id: int,
     db: db_dependency,
-    group_by: str = Query("daily", regex="^(hourly|daily|monthly|yearly)$", description="Group views by 'hourly', 'daily', 'monthly', or 'yearly'"),
+    request: Request = None,
+    blog_id: int = Query(None, description="Optional blog ID to filter by a specific blog"),
+    group_by: str = Query("daily", regex="^(daily|monthly|yearly)$", description="Group views by 'daily', 'monthly', or 'yearly'"),
     period: int = Query(1, ge=1, le=365, description="Time range for the data (in hours for hourly, days for daily, months for monthly, and years for yearly)"),
 ):
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
+    user_id = request.headers.get("x-user-id")
 
-    if group_by == "hourly":
-        start_date = now - timedelta(hours=period)
-        group_func = func.date_trunc("hour", BlogView.view_date)
-        label = "hour"
-    elif group_by == "daily":
+    if group_by == "daily":
         start_date = now - timedelta(days=period)
         group_func = func.date(BlogView.view_date)
-        label = "date"
+        label = "day"
     elif group_by == "monthly":
         start_date = now - timedelta(days=30 * period)
-        group_func = (extract("year", BlogView.view_date), extract("month", BlogView.view_date))  # Group by month
+        group_func = func.concat(
+            extract("year", BlogView.view_date),
+            "-",
+            func.to_char(extract("month", BlogView.view_date), 'FM00')
+        )
         label = "year_month"
     elif group_by == "yearly":
         start_date = now - timedelta(days=365 * period)
         group_func = extract("year", BlogView.view_date)
         label = "year"
 
-    blogs = db.query(Blog).filter(Blog.author == user_id).all()
-    if not blogs:
-        raise HTTPException(status_code=404, detail="No blogs found for this user")
-    blog_ids = [blog.id for blog in blogs]
-    grouped_views = (
+    if blog_id:
+        blog = db.query(Blog).filter(Blog.id == blog_id, Blog.author == user_id).first()
+        if not blog:
+            raise HTTPException(status_code=404, detail="Blog not found or does not belong to user")
+        blog_ids = [blog_id]
+    else:
+        blogs = db.query(Blog).filter(Blog.author == user_id).all()
+        if not blogs:
+            raise HTTPException(status_code=404, detail="No blogs found for this user")
+        blog_ids = [blog.id for blog in blogs]
+
+    grouped_views_current = (
         db.query(
             group_func.label(label),
             func.sum(BlogView.view_count).label("total_views"),
@@ -449,25 +456,73 @@ def get_user_views(
         .order_by(group_func)
         .all()
     )
-    if group_by == "hourly":
-        results = [{"hour": row.hour.strftime("%Y-%m-%d %H:00"), "total_views": row.total_views} for row in grouped_views]
-    elif group_by == "daily":
-        results = [{"date": str(row.date), "total_views": row.total_views} for row in grouped_views]
+
+    start_date_previous = start_date - timedelta(days=period)
+    grouped_views_previous = (
+        db.query(
+            group_func.label(label),
+            func.sum(BlogView.view_count).label("total_views"),
+        )
+        .filter(BlogView.blog_id.in_(blog_ids), BlogView.view_date >= start_date_previous)
+        .group_by(group_func)
+        .order_by(group_func)
+        .all()
+    )
+
+    results_current: List[Dict[str, Any]] = []
+    results_previous: Dict[str, int] = {}
+
+    if group_by == "daily":
+        for row in grouped_views_current:
+            day = row.day.strftime("%d %b")
+            results_current.append({"day": day, "total_views": row.total_views})
+            results_previous[day] = 0
+
+        for row in grouped_views_previous:
+            day = row.day.strftime("%d %b")
+            results_previous[day] = row.total_views
+
     elif group_by == "monthly":
-        results = [
-            {"year": int(row[0]), "month": int(row[1]), "total_views": row.total_views}
-            for row in grouped_views
-        ]
+        for row in grouped_views_current:
+            year_month = row.year_month.split("-")
+            year, month = int(year_month[0]), int(year_month[1])
+            month_name = datetime(year, month, 1).strftime("%b")
+            results_current.append({"month": f"{month_name} {year}", "total_views": row.total_views})
+            results_previous[f"{month_name} {year}"] = 0
+
+        for row in grouped_views_previous:
+            year_month = row.year_month.split("-")
+            year, month = int(year_month[0]), int(year_month[1])
+            month_name = datetime(year, month, 1).strftime("%b")
+            results_previous[f"{month_name} {year}"] = row.total_views
+
     elif group_by == "yearly":
-        results = [{"year": int(row.year), "total_views": row.total_views} for row in grouped_views]
+        for row in grouped_views_current:
+            year = int(row.year)
+            results_current.append({"year": year, "total_views": row.total_views})
+            results_previous[year] = 0
+
+        for row in grouped_views_previous:
+            year = int(row.year)
+            results_previous[year] = row.total_views
+
+    percentage_change = None
+    total_current_views = sum([entry["total_views"] for entry in results_current])
+    total_previous_views = sum(results_previous.values())
+    if total_previous_views > 0:
+        percentage_change = ((total_current_views - total_previous_views) / total_previous_views) * 100
+    elif total_previous_views == 0 and total_current_views > 0:
+        percentage_change = 100
+    else:
+        percentage_change = 0
 
     return {
         "start_date": str(start_date),
         "end_date": str(now),
         "group_by": group_by,
-        "views": results,
+        "views": results_current,
+        "percentage_change": percentage_change,
     }
-
 
 @router.get("/blogs/latest-blogs/", response_model=List[BlogResponseSchema])
 def get_latest_blogs(
