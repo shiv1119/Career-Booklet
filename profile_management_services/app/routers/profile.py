@@ -191,7 +191,7 @@ async def create_about(db: db_dependency, about_user: AboutUserCreate, request: 
     db.refresh(about_user_db)
     return {"message": "About section created successfully", "about data": about_user_db}
 
-@router.put("/profile/about/{about_id}", status_code=status.HTTP_200_OK)
+@router.put("/profile/about/", status_code=status.HTTP_200_OK)
 async def update_about(db: db_dependency, data: AboutUserUpdate, request: Request):
     user_id = request.headers.get("x-user-id")
     about_user = db.query(AboutUser).filter(AboutUser.auth_user_id==user_id).first()
@@ -203,7 +203,7 @@ async def update_about(db: db_dependency, data: AboutUserUpdate, request: Reques
     db.refresh(about_user)
     return about_user
 
-@router.get("/profile/about/{auth_user_id}",response_model=AboutUserGetRequest,status_code=status.HTTP_200_OK)
+@router.get("/profile/about/",response_model=AboutUserGetRequest,status_code=status.HTTP_200_OK)
 async def get_about(db: db_dependency, request: Request):
     user_id = request.headers.get("x-user-id")
     about_user = db.query(AboutUser).filter(AboutUser.auth_user_id==user_id).first()
@@ -215,7 +215,8 @@ async def get_about(db: db_dependency, request: Request):
 #skills section
 
 @router.post("/user/{auth_user_id}/skills", response_model=UserSkillsResponse, status_code=status.HTTP_201_CREATED)
-def create_user_skills(auth_user_id: int, skills_data: UserSkillsCreate, db: db_dependency):
+def create_user_skills(request: Request, skills_data: UserSkillsCreate, db: db_dependency):
+    auth_user_id = request.headers.get("x-user-id")
     existing_skills = db.query(Skill).filter(Skill.name.in_(skills_data.skills)).all()
     existing_skills_map = {skill.name: skill.id for skill in existing_skills}
 
@@ -252,7 +253,8 @@ def create_user_skills(auth_user_id: int, skills_data: UserSkillsCreate, db: db_
 
 
 @router.put("/user/{auth_user_id}/skills", response_model=UserSkillsResponse, status_code=status.HTTP_200_OK)
-def update_user_skills(auth_user_id: int, skills_data: UserSkillsUpdate, db: db_dependency):
+def update_user_skills(request: Request, skills_data: UserSkillsUpdate, db: db_dependency):
+    auth_user_id = request.headers.get("x-user-id")
     skill_ids = skills_data.skills
 
     existing_skills = db.query(Skill).filter(Skill.id.in_(skill_ids)).all()
@@ -281,7 +283,8 @@ def update_user_skills(auth_user_id: int, skills_data: UserSkillsUpdate, db: db_
     )
 
 @router.get("/user/{auth_user_id}/skills", response_model=UserSkillsResponse, status_code=status.HTTP_200_OK)
-def get_user_skills(auth_user_id: int, db: db_dependency):
+def get_user_skills(request: Request, db: db_dependency):
+    auth_user_id = request.headers.get("x-user-id")
     user_skills = (
         db.query(UserSkill)
         .filter(UserSkill.auth_user_id == auth_user_id)
@@ -308,8 +311,8 @@ def get_user_skills(auth_user_id: int, db: db_dependency):
     )
 
 @router.delete("/user/{auth_user_id}/skills", status_code=status.HTTP_200_OK)
-def delete_user_skills(auth_user_id: int, delete_data: UserSkillsUpdate, db: db_dependency):
-
+def delete_user_skills(request: Request, delete_data: UserSkillsUpdate, db: db_dependency):
+    auth_user_id = request.headers.get("x-user-id")
     if not all(isinstance(skill, int) for skill in delete_data.skills):
         raise HTTPException(status_code=400, detail="Skills should be provided as integers (IDs)")
 
@@ -340,7 +343,8 @@ def create_language(language_create: LanguageCreate, db: db_dependency):
 
 
 @router.post("/users/{auth_user_id}/languages/", status_code=status.HTTP_201_CREATED)
-def create_language_for_user(auth_user_id: int, language_create: LanguageCreate, db: db_dependency):
+def create_language_for_user(request: Request, language_create: LanguageCreate, db: db_dependency):
+    auth_user_id = request.headers.get("x-user-id")
     db_language = db.query(Language).filter(Language.name == language_create.name).first()
     
     if not db_language:
@@ -372,11 +376,11 @@ def create_language_for_user(auth_user_id: int, language_create: LanguageCreate,
 
 @router.put("/users/{auth_user_id}/languages/{language_id}", status_code=status.HTTP_200_OK)
 def update_language_for_user(
-    auth_user_id: int, 
+    request: Request,
     user_language_update: UserLanguageUpdate,
     db: db_dependency
 ):
-
+    auth_user_id = request.headers.get("x-user-id")
     db_user_language = db.query(UserLanguage).filter(
         UserLanguage.auth_user_id == auth_user_id,
         UserLanguage.language_id == user_language_update.language_id
@@ -394,7 +398,8 @@ def update_language_for_user(
     return {"message": "The language updated successfully"}
 
 @router.get("/users/{auth_user_id}/languages", response_model=List[UserLanguageResponse], status_code=status.HTTP_200_OK)
-def get_languages_for_user(auth_user_id: int, db: db_dependency):
+def get_languages_for_user(request: Request, db: db_dependency):
+    auth_user_id = request.headers.get("x-user-id")
     user_languages = db.query(UserLanguage).filter(UserLanguage.auth_user_id == auth_user_id).all()
     
     if not user_languages:
@@ -413,7 +418,8 @@ def get_languages_for_user(auth_user_id: int, db: db_dependency):
 
 
 @router.delete("/users/{auth_user_id}/languages/{language_id}", response_model=dict, status_code=status.HTTP_200_OK)
-def delete_language_for_user(auth_user_id: int, language_delete: UserLanguageDelete, db: db_dependency):
+def delete_language_for_user(request: Request, language_delete: UserLanguageDelete, db: db_dependency):
+    auth_user_id = request.headers.get("x-user-id")
     user_language = db.query(UserLanguage).filter(
         UserLanguage.auth_user_id == auth_user_id,
         UserLanguage.language_id == language_delete.language_id
@@ -428,10 +434,11 @@ def delete_language_for_user(auth_user_id: int, language_delete: UserLanguageDel
 
 @router.post("/users/{auth_user_id}/causes/", response_model=dict)
 def create_or_update_causes_for_user(
-    auth_user_id: int, 
+    request: Request, 
     causes_request: CauseCreate,
     db: db_dependency
 ):
+    auth_user_id = request.headers.get("x-user-id")
     if causes_request.causes is None:
         db.query(Cause).filter(Cause.auth_user_id == auth_user_id).delete()
         db.commit()
@@ -455,7 +462,8 @@ def create_or_update_causes_for_user(
 
 
 @router.get("/users/{auth_user_id}/causes/", response_model=List[str], status_code=status.HTTP_200_OK)
-def get_causes_for_user(auth_user_id: int, db: db_dependency):
+def get_causes_for_user(request: Request, db: db_dependency):
+    auth_user_id = request.headers.get("x-user-id")
     causes = db.query(Cause.cause_name).filter(Cause.auth_user_id == auth_user_id).all()
     
     if not causes:
