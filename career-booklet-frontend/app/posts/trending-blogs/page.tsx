@@ -5,8 +5,10 @@ import { BlogResponse, Category, Subcategory, Tag } from "@/types";
 import { Eye, Filter, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import Select from "react-select";
+import { useSession } from "next-auth/react";
 
 const TrendingBlogs = () => {
+  const {data: session, status} = useSession()
   const [blogs, setBlogs] = useState<BlogResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +49,8 @@ const TrendingBlogs = () => {
     const category = categories.find((cat) => cat.id === selectedCategory);
     return category ? category.subcategories : [];
   };
+
+  const isAuthenticated = status === 'authenticated';
 
   const fetchBlogs = useCallback(async () => {
     try {
@@ -94,7 +98,6 @@ const TrendingBlogs = () => {
 
       {filtersVisible && (
         <div className="bg-white dark:bg-gray-800 rounded-lg mb-6 flex flex-wrap gap-2 justify-center px-2">
-          {/* Days Selection */}
           <div className="w-full">
             <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">Trending in Last (Days)</label>
             <input
@@ -106,8 +109,6 @@ const TrendingBlogs = () => {
               className="block w-full border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-200 rounded-md shadow-sm focus:ring-gray-500 focus:border-gray-500 sm:text-sm"
             />
           </div>
-
-          {/* Category Selection */}
           <div className="w-full">
             <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">Category</label>
             <select
@@ -123,8 +124,6 @@ const TrendingBlogs = () => {
               ))}
             </select>
           </div>
-
-          {/* Subcategory Selection */}
           <div className="w-full">
             <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">Subcategory</label>
             <select
@@ -140,8 +139,6 @@ const TrendingBlogs = () => {
               ))}
             </select>
           </div>
-
-          {/* Author Filter */}
           <div className="w-full">
             <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">Author</label>
             <input
@@ -152,8 +149,6 @@ const TrendingBlogs = () => {
               className="block w-full border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-200 rounded-md shadow-sm focus:ring-gray-500 focus:border-gray-500 sm:text-sm"
             />
           </div>
-
-          {/* Search Filter */}
           <div className="w-full">
             <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">Search</label>
             <input
@@ -164,8 +159,6 @@ const TrendingBlogs = () => {
               className="block w-full border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-200 rounded-md shadow-sm focus:ring-gray-500 focus:border-gray-500 sm:text-sm"
             />
           </div>
-
-          {/* Tags Selection */}
           <div className="w-full">
           <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">
             Tags
@@ -207,6 +200,9 @@ const TrendingBlogs = () => {
               </span>
               <span>By: {blog.author}</span>
               <span>{blog.category}</span>
+              {isAuthenticated && Number(session.user.id) === Number(blog.author) && (
+                <span><Link className="text-indigo-600" href={`/posts/view-analytics/${blog.id}`}>View analytics</Link></span>
+              )}
             </div>
             <div 
               className="text-gray-700 dark:text-gray-300 mt-2 line-clamp-3 text-justify whitespace-pre-wrap"

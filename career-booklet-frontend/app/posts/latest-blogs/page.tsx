@@ -4,9 +4,11 @@ import { getLatestBlogs, fetchCategories, fetchTags } from "@/app/api/blogs_serv
 import { BlogResponse, Category, Subcategory, Tag } from "@/types";
 import { Eye, Filter, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
-import Select from "react-select"; // Import react-select
+import Select from "react-select";
+import { useSession } from "next-auth/react"; // Import react-select
 
 const LatestBlogs = () => {
+  const {data: session, status} = useSession();
   const [blogs, setBlogs] = useState<BlogResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,7 @@ const LatestBlogs = () => {
     loadCategories();
     loadTags();
   }, []);
-
+  const isAuthenticated = status === 'authenticated';
   const getSubcategories = (): Subcategory[] => {
     const category = categories.find(cat => cat.id === selectedCategory);
     return category ? category.subcategories : [];
@@ -234,6 +236,9 @@ const LatestBlogs = () => {
               </span>
               <span>By: {blog.author}</span>
               <span>{blog.category}</span>
+              {isAuthenticated && Number(session.user.id) === Number(blog.author) && (
+                <span><Link className="text-indigo-600" href={`/posts/view-analytics/${blog.id}`}>View analytics</Link></span>
+              )}
             </div>
             <div 
               className="text-gray-700 dark:text-gray-300 mt-2 line-clamp-3 text-justify whitespace-pre-wrap"

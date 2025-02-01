@@ -33,7 +33,7 @@ public_routes = {
     "get_blog_by_id": "/api/blogs/by_id/",
     "increment_view": "/api/blogs/by_id/increment-view/",
     "get_all_tags": "/api/tags/",
-    "trending_blogs": "/api/blogs/trending/"
+    "trending_blogs": "/api/blogs/trending/",
 }
 
 AUTH_SERVICE_URL = f"{os.environ.get("AUTH_SERVICE")}/api/validate-token"
@@ -83,6 +83,7 @@ async def gateway(service: str, path: str, request: Request):
         user_id = await validate_token(token)
 
     service_url = services.get(service)
+    print(service, path)
     if not service_url:
         raise HTTPException(status_code=404, detail="Service not found")
 

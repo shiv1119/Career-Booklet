@@ -21,21 +21,22 @@ const RecoverAccount: React.FC = () => {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (activationSuccess && countdown > 0) {
-      interval = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            router.push('/');
-          }
-          return prev - 1;
-        });
+    if (activationSuccess) {
+      const interval = setInterval(() => {
+        setCountdown((prev) => prev - 1);
       }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [activationSuccess, countdown, router]);
 
+      return () => clearInterval(interval);
+    }
+  }, [activationSuccess]);
+
+  useEffect(() => {
+    if (countdown === 0 && activationSuccess) {
+      router.push('/');
+    }
+  }, [countdown, activationSuccess, router]);
+
+  
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (timer > 0) {

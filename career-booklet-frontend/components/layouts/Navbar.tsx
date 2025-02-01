@@ -16,7 +16,7 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ children }) => {
-  const {data: session,status} = useSession()
+  const {data: session,status} = useSession();
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); 
   const [isBlogsDropdownOpen, setIsBlogsDropdownOpen] = useState(false);
