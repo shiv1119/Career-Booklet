@@ -3,14 +3,14 @@ import React, { useState } from "react";
 import { FaCamera } from "react-icons/fa";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession, getSession } from "next-auth/react";
 import { updateProfileImage, updateBackgroundImage } from "@/app/api/profile/route";
 
 const UpdateImagesPage = () => {
-  const [profileImage, setProfileImage] = useState(null);
-  const [bannerImage, setBannerImage] = useState(null);
-  const [previewProfileImage, setPreviewProfileImage] = useState(null);
-  const [previewBannerImage, setPreviewBannerImage] = useState(null);
+  const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [bannerImage, setBannerImage] = useState<File | null>(null);
+  const [previewProfileImage, setPreviewProfileImage] = useState<string | null>(null);
+  const [previewBannerImage, setPreviewBannerImage] = useState<string | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isBannerModalOpen, setIsBannerModalOpen] = useState(false);
 
@@ -18,14 +18,16 @@ const UpdateImagesPage = () => {
   const { data: session } = useSession();
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, type: string) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
         if (type === "profile") {
-          setPreviewProfileImage(reader.result);
+          setPreviewProfileImage(reader.result as string);
+          setProfileImage(file);
         } else if (type === "banner") {
-          setPreviewBannerImage(reader.result);
+          setPreviewBannerImage(reader.result as string);
+          setBannerImage(file);
         }
       };
       reader.readAsDataURL(file);
@@ -33,18 +35,30 @@ const UpdateImagesPage = () => {
   };
 
   const handleImageSave = async (type: string) => {
-    if (type === "profile") {
-      const response = await updateProfileImage(previewProfileImage, session?.user?.accessToken);
-      if (response.ok) {
-        setProfileImage(previewProfileImage);
+    try {
+      if (type === "profile" && profileImage) {
+        const response = await updateProfileImage(profileImage, session?.user?.accessToken);
+        if (response.ok) {
+          console.log(response.json());
+          setProfileImage(profileImage);
+          closeModal("profile");
+        } else {
+          console.error('Failed to update profile image');
+        }
+      } else if (type === "banner" && bannerImage) {
+        console.log("Attempting Banner Change!");
+        const response = await updateBackgroundImage(bannerImage, session?.user?.accessToken);
+
+        if (response.ok) {
+          setBannerImage(bannerImage);
+          closeModal("banner");
+        } else {
+          console.error('Failed to update banner image');
+        }
       }
-    } else if (type === "banner") {
-      const response = await updateBackgroundImage(previewBannerImage, session?.user?.accessToken);
-      if (response.ok) {
-        setBannerImage(previewBannerImage);
-      }
+    } catch (error) {
+      console.error('Error updating image', error);
     }
-    closeModal(type);
   };
 
   const openModal = (type: string) => {
@@ -66,14 +80,23 @@ const UpdateImagesPage = () => {
   return (
     <div className="min-h-screen flex flex-col items-center p-3">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 w-full max-w-4xl">
-        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6 text-center">
-          Update Your Profile Images
-        </h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white text-center">
+            Update Your Profile Images
+          </h2>
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="dark:bg-gray-700 px-4 py-1 rounded-full border-2 hover:bg-blue-600 hover:text-white"
+          >
+            Skip
+          </button>
+        </div>
 
         <div className="relative h-48 rounded-md overflow-hidden">
           {bannerImage ? (
             <Image
-              src={bannerImage}
+              src={URL.createObjectURL(bannerImage)}
               alt="Banner"
               layout="fill"
               objectFit="cover"
@@ -100,7 +123,7 @@ const UpdateImagesPage = () => {
           <div className="relative w-32 h-32 -mt-20 mb-4">
             {profileImage ? (
               <Image
-                src={profileImage}
+                src={URL.createObjectURL(profileImage)}
                 alt="Profile"
                 layout="fill"
                 objectFit="cover"
@@ -122,10 +145,16 @@ const UpdateImagesPage = () => {
               <FaCamera className="text-blue-500 dark:text-blue-300" />
             </button>
           </div>
+        <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="dark:bg-gray-700 px-4 py-1 rounded-md border-2 hover:bg-green-600 hover:text-white"
+          >
+            Update
+          </button>
         </div>
       </div>
 
-      {/* Profile Image Modal */}
       {isProfileModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg w-full max-w-sm">
@@ -160,7 +189,7 @@ const UpdateImagesPage = () => {
                 <img
                   src={previewProfileImage}
                   alt="Preview"
-                  className="w-full h-auto rounded-lg"
+                  className="w-full h-auto rounded-full"
                 />
               </div>
             )}
@@ -211,7 +240,7 @@ const UpdateImagesPage = () => {
                 <img
                   src={previewBannerImage}
                   alt="Preview"
-                  className="w-full h-auto rounded-lg"
+                  className="w-full h-auto" 
                 />
               </div>
             )}

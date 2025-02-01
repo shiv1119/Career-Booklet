@@ -1,9 +1,9 @@
-"use client"
-import React, { useState } from "react";
+'use client';
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createProfile } from "@/app/api/profile/route";
 import { useSession } from "next-auth/react";
-import { Country } from "country-state-city";
+import { Country, State, City } from "country-state-city";
 
 const CreateProfilePage = () => {
   const [formData, setFormData] = useState({
@@ -13,17 +13,35 @@ const CreateProfilePage = () => {
     date_of_birth: "",
     gender: "",
     country: "",
+    state: "",
+    city: "",
+    full_address:"",
+    website: "",
   });
 
-  const [previewProfileImage, setPreviewProfileImage] = useState(null);
-  const [previewBannerImage, setPreviewBannerImage] = useState(null);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isBannerModalOpen, setIsBannerModalOpen] = useState(false);
-
+  const [error, setError] = useState<string | null>(null);
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
   const router = useRouter();
   const { data: session } = useSession();
 
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
+  useEffect(() => {
+    if (formData.country) {
+      const selectedCountry = Country.getAllCountries().find(
+        (country) => country.name === formData.country
+      );
+      setStates(selectedCountry ? State.getStatesOfCountry(selectedCountry.isoCode) : []);
+    }
+  }, [formData.country]);
+
+  useEffect(() => {
+    if (formData.state) {
+      const selectedState = states.find((state) => state.name === formData.state);
+      setCities(selectedState ? City.getCitiesOfState(selectedState.countryCode, selectedState.isoCode) : []);
+    }
+  }, [formData.state, states]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
@@ -31,42 +49,69 @@ const CreateProfilePage = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const profileData = {
-      full_name: formData.full_name,
-      additional_name: formData.additional_name,
-      pronouns: formData.pronouns,
-      date_of_birth: formData.date_of_birth,
-      gender: formData.gender,
-      country: formData.country,
-    };
-
-    console.log("Profile Data Submitted:", profileData);
-    createProfile(profileData, session?.user?.accessToken);
-    router.push("/profile/update-images");
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const dateValue = e.target.value; // The input will return a YYYY-MM-DD format
+    setFormData({
+      ...formData,
+      date_of_birth: dateValue,
+    });
   };
+
+  const handleSubmit = async (formData: any) => {
+    try {
+      setError(null);
+      const payload = {
+        full_name: formData.full_name || "",
+        additional_name: formData.additional_name || "",
+        pronouns: formData.pronouns || "",
+        date_of_birth: formData.date_of_birth || "",
+        gender: formData.gender || "",
+        country: formData.country || "",
+        city: formData.city || "",
+        state: formData.state || "",
+        full_address: formData.full_address || "",
+        website: formData.website || "",
+      };
+  
+      console.log("Payload being sent:", payload);
+  
+      const response = await createProfile(payload, session?.user?.accessToken);
+  
+      if (response.ok) {
+        router.push("/profile/update-images");
+      } else {
+        setError(response.detail || "An error occurred while creating the profile.");
+      }
+    } catch (error) {
+      setError("An error occurred while submitting the form. Please try again.");
+      console.error(error);
+    }
+  };
+  
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 w-full max-w-4xl">
-        <div className="flex justify-between h-10 mb-6">
+      <div className="bg-white dark:bg-gray-700 rounded-lg shadow-md p-6 w-full max-w-4xl">
+        {error && (
+          <div className="text-red-600 text-sm mb-4">
+            <strong>Warning:</strong> {error}
+          </div>
+        )}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit(formData);
+          }}
+          className="space-y-6"
+        >
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6 text-center">
             Create Your Profile
           </h2>
-          <button
-            type="button"
-            onClick={() => router.push("/")}
-            className="dark:bg-gray-700 px-3 rounded-full border-2 hover:bg-blue-600 hover:text-white"
-          >
-            Skip
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-6">
+
           <div>
             <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Full Name
+              <span className="text-red-600">*</span>
             </label>
             <input
               type="text"
@@ -74,10 +119,13 @@ const CreateProfilePage = () => {
               name="full_name"
               value={formData.full_name}
               onChange={handleChange}
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900"
+              placeholder="Enter your Full Name"
+              required
             />
           </div>
 
+          {/* Additional Name */}
           <div>
             <label htmlFor="additional_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Additional Name
@@ -88,24 +136,32 @@ const CreateProfilePage = () => {
               name="additional_name"
               value={formData.additional_name}
               onChange={handleChange}
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900"
+              placeholder="Enter your Additional Name"
             />
           </div>
 
+          {/* Pronouns */}
           <div>
             <label htmlFor="pronouns" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Pronouns
             </label>
-            <input
-              type="text"
+            <select
               id="pronouns"
               name="pronouns"
               value={formData.pronouns}
               onChange={handleChange}
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
-            />
+              className="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900"
+            >
+              <option value="" disabled>Select Pronouns</option>
+              <option value="he/him">He/Him</option>
+              <option value="she/her">She/Her</option>
+              <option value="they/them">They/Them</option>
+              <option value="other">Other</option>
+            </select>
           </div>
 
+          {/* Date of Birth */}
           <div>
             <label htmlFor="date_of_birth" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Date of Birth
@@ -115,11 +171,12 @@ const CreateProfilePage = () => {
               id="date_of_birth"
               name="date_of_birth"
               value={formData.date_of_birth}
-              onChange={handleChange}
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
+              onChange={handleDateChange}
+              className="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900"
             />
           </div>
 
+          {/* Gender */}
           <div>
             <label htmlFor="gender" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Gender
@@ -129,7 +186,7 @@ const CreateProfilePage = () => {
               name="gender"
               value={formData.gender}
               onChange={handleChange}
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900"
             >
               <option value="" disabled>Select Gender</option>
               <option value="Male">Male</option>
@@ -139,19 +196,17 @@ const CreateProfilePage = () => {
             </select>
           </div>
 
+          {/* Country */}
           <div>
-            <label
-              htmlFor="country"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
+            <label htmlFor="country" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Country
             </label>
             <select
               id="country"
               name="country"
               value={formData.country}
-              onChange={(e) => handleChange(e)}
-              className="mt-1 block w-full rounded-none px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500"
+              onChange={handleChange}
+              className="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900"
             >
               <option value="" disabled>Select Country</option>
               {Country.getAllCountries().map((country) => (
@@ -162,118 +217,90 @@ const CreateProfilePage = () => {
             </select>
           </div>
 
+          {/* State */}
+          <div>
+            <label htmlFor="state" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              State
+            </label>
+            <select
+              id="state"
+              name="state"
+              value={formData.state}
+              onChange={handleChange}
+              className="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900"
+            >
+              <option value="" disabled>Select State</option>
+              {states.map((state) => (
+                <option key={state.isoCode} value={state.name}>
+                  {state.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* City */}
+          <div>
+            <label htmlFor="city" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              City
+            </label>
+            <select
+              id="city"
+              name="city"
+              value={formData.city}
+              onChange={handleChange}
+              className="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900"
+            >
+              <option value="" disabled>Select City</option>
+              {cities.map((city) => (
+                <option key={city.name} value={city.name}>
+                  {city.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="full_address" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+               Full Address
+            </label>
+            <input
+              type="text"
+              id="full_address"
+              name="full_address"
+              value={formData.full_address}
+              onChange={handleChange}
+              className="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900"
+              placeholder="Enter your Full Address"
+            />
+          </div>
+          <div>
+            <label htmlFor="website" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+               Website
+               <span className="text-red-600">*</span>
+            </label>
+            <input
+              type="url"
+              id="website"
+              name="website"
+              value={formData.website}
+              onChange={handleChange}
+              className="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900"
+              placeholder="Enter you Website Link"
+              required
+            />
+          </div>
+
+          {/* Submit Button */}
           <div className="flex justify-between items-center">
             <button
               type="submit"
               className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
             >
-              Create Profile
+              Submit
             </button>
-            
           </div>
         </form>
       </div>
-
-      {isProfileModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg w-full max-w-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-                Upload Profile Image
-              </h3>
-              <button
-                onClick={() => closeModal("profile")}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                &times;
-              </button>
-            </div>
-            <div className="flex items-center justify-center mb-4">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleImageChange(e, "profile")}
-                className="hidden"
-                id="profileImage"
-              />
-              <label
-                htmlFor="profileImage"
-                className="flex items-center justify-center cursor-pointer bg-gray-300 dark:bg-gray-700 px-4 py-2 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-600"
-              >
-                Choose Image
-              </label>
-            </div>
-            {previewProfileImage && (
-              <div className="mb-4">
-                <img
-                  src={previewProfileImage}
-                  alt="Preview"
-                  className="w-full h-auto rounded-lg"
-                />
-              </div>
-            )}
-            <div className="flex justify-end">
-              <button
-                onClick={() => handleImageSave("profile")}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Banner Image Modal */}
-      {isBannerModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg w-full max-w-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-                Upload Banner Image
-              </h3>
-              <button
-                onClick={() => closeModal("banner")}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                &times;
-              </button>
-            </div>
-            <div className="flex items-center justify-center mb-4">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleImageChange(e, "banner")}
-                className="hidden"
-                id="bannerImage"
-              />
-              <label
-                htmlFor="bannerImage"
-                className="flex items-center justify-center cursor-pointer bg-gray-300 dark:bg-gray-700 px-4 py-2 rounded-lg text-gray-800 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-600"
-              >
-                Choose Image
-              </label>
-            </div>
-            {previewBannerImage && (
-              <div className="mb-4">
-                <img
-                  src={previewBannerImage}
-                  alt="Preview"
-                  className="w-full h-auto rounded-lg"
-                />
-              </div>
-            )}
-            <div className="flex justify-end">
-              <button
-                onClick={() => handleImageSave("banner")}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
