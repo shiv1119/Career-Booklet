@@ -71,7 +71,7 @@ const ResetPassword: React.FC = () => {
 
       if (response.ok) {
         setMessage({ text: 'Password reset successfully! Redirecting to login...', type: 'success' });
-        setTimeout(() => router.push('/auth/login'), 3000);
+        setTimeout(() => router.push('/auth/login-password'), 3000);
       } else {
         const errorData = await response.json();
         setMessage({ text: errorData.detail || 'Failed to reset password. Please try again.', type: 'error' });
@@ -89,7 +89,7 @@ const ResetPassword: React.FC = () => {
     setMessage(null);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_AUTH_SERVICE}/api/auth/send-otp?email_or_phone=${encodeURIComponent(email)}&purpose=${encodeURIComponent('reset_password')}`,
+        `${process.env.NEXT_PUBLIC_AUTH_SERVICE}/api/auth/send-otp?email_or_phone=${encodeURIComponent(email)}&purpose=${encodeURIComponent('reset-password')}`,
         { method: 'POST' }
       );
 
@@ -123,10 +123,8 @@ const ResetPassword: React.FC = () => {
           </div>
         )}
 
-        {!showOtpFields ? (
-          <>
             <div className="mb-5">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-900 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                 Email
               </label>
               <input
@@ -134,10 +132,12 @@ const ResetPassword: React.FC = () => {
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                className="block w-full px-3 py-2 border dark:text-white bg-gray-700 placeholder:dark:text-gray-400 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter your email"
               />
             </div>
+        {!showOtpFields ? (
+          <>
             <button
               type="button"
               onClick={handleSendOtp}
@@ -148,13 +148,15 @@ const ResetPassword: React.FC = () => {
           </>
         ) : (
           <>
+            <div className='flex flex-col gap-3 pb-2'>
+              <div className='font-bold text-sm'>Enter OTP</div>
             <div className="flex mb-2 space-x-2">
               {Array.from({ length: 6 }).map((_, i) => (
                 <input
                   key={i}
                   type="text"
                   maxLength={1}
-                  className="block w-9 h-9 text-center border border-gray-300 rounded-lg"
+                  className="block w-9 h-9 text-center border bg-gray-700  font-bold border-gray-300 rounded-lg"
                   required
                   ref={(el) => {
                     if (el) inputs.current[i] = el;
@@ -164,8 +166,9 @@ const ResetPassword: React.FC = () => {
                 />
               ))}
             </div>
+            </div>
             <div className="mb-5">
-              <label htmlFor="new-password" className="block text-sm font-medium text-gray-900 mb-2">
+              <label htmlFor="new-password" className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                 New Password
               </label>
               <input
@@ -173,7 +176,7 @@ const ResetPassword: React.FC = () => {
                 id="new-password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                className="block w-full px-3 py-2 border border-gray-300 bg-gray-700 placeholder:dark:text-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter new password"
               />
             </div>
