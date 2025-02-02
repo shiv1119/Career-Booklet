@@ -54,5 +54,6 @@ export interface AnalyticsData {
   year?: string | number;
   total_views: number;
   percentage_change: number;
+  total_current_views: number;
 }
 

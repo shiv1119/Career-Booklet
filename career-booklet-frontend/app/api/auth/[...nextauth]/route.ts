@@ -104,8 +104,10 @@ const authOptions: NextAuthOptions = {
         token.id = userWithTokens.id;
         token.accessToken = userWithTokens.tokens.access_token;
         token.refreshToken = userWithTokens.tokens.refresh_token;
-        token.expiresIn = 3600;
-        token.accessTokenExpires = currentTime + 3600 * 1000;
+        token.expiresIn = 86400;
+        token.accessTokenExpires = currentTime + 86400 * 1000; 
+        token.refreshTokenExpires = currentTime + 7 * 86400 * 1000;
+      
         console.log(userWithTokens);
       }
 

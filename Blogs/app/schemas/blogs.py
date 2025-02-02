@@ -25,7 +25,7 @@ class BlogResponseSchema(BaseModel):
     created_at: datetime
     updated_at: datetime
     tags: List[str]
-    total_views: int = 0
+    total_views: int
 
     class Config:
         from_attributes = True
@@ -51,3 +51,6 @@ class TagResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+

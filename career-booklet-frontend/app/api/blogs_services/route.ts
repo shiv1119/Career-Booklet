@@ -266,3 +266,31 @@ export async function fetchUserViews({ token, queryParams }: FetchOptions) {
     throw error;
   }
 }
+
+export const fetchTopUserBlogs = async ({ token, queryParams }: FetchOptions) => {
+  const queryString = new URLSearchParams({
+    service: "blogs_services",
+    path: "/api/blogs/user/top/",
+    ...(queryParams || {}),
+  }).toString();
+
+  const url = `${API_GATEWAY_URL}?${queryString}`;
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch top blogs: ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching top user blogs:", error);
+    throw error;
+  }
+};
+

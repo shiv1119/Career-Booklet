@@ -2,10 +2,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { getLatestBlogs, fetchCategories, fetchTags } from "@/app/api/blogs_services/route";
 import { BlogResponse, Category, Subcategory, Tag } from "@/types";
-import { Eye, Filter, ChevronDown, ChevronUp } from "lucide-react";
+import { Eye} from "lucide-react";
 import Link from "next/link";
-import Select from "react-select";
-import { useSession } from "next-auth/react"; // Import react-select
+import { useSession } from "next-auth/react";
+import { MdOutlineTimer } from "react-icons/md"; 
 
 const LatestBlogs = () => {
   const {data: session, status} = useSession();
@@ -13,16 +13,15 @@ const LatestBlogs = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [tags, setTags] = useState<Tag[]>([]); // Stores available tags
-  const [selectedTags, setSelectedTags] = useState<{ value: number; label: string }[]>([]); // For multi-select
-
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [selectedTags, setSelectedTags] = useState<{ value: number; label: string }[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<number | null>(null);
   const [author, setAuthor] = useState<string>("");
   const [minViews, setMinViews] = useState<number | null>(null);
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
-  const [filtersVisible, setFiltersVisible] = useState<boolean>(false);
+  const [tagSearch, setTagSearch] = useState<string>("");
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -81,38 +80,49 @@ const LatestBlogs = () => {
     fetchBlogs();
   }, [fetchBlogs]);
 
+  const filteredTags = tags.filter(tag =>
+    tag.name.toLowerCase().includes(tagSearch.toLowerCase()) && !selectedTags.some(t => t.value === tag.id)
+  );
+
+  const handleTagSelect = (tag: Tag) => {
+    const tagOption = { value: tag.id, label: tag.name };
+    setSelectedTags(prev => [...prev, tagOption]);
+    setTagSearch('');
+  };
+
+  const removeTag = (tagValue: number) => {
+    setSelectedTags(prev => prev.filter(tag => tag.value !== tagValue));
+  };
+
+  const handleTagSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTagSearch(e.target.value);
+  };
+  const resetFilters = () => {
+    setSelectedCategory(null);
+    setSelectedSubcategory(null);
+    setAuthor("");
+    setSelectedTags([]);
+    setMinViews(null);
+    setStartDate("");
+    setEndDate("");
+    fetchBlogs();
+  };
+
   return (
     <div className="min-h-screen mx-auto dark:bg-gray-800">
-      <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white text-center">
-        Latest Blogs
+      <h1 className="flex justify-center items-center gap-2 text-lg font-bold mb-8 text-center px-5 py-4  shadow-lg rounded-md dark:bg-gray-900 dark:shadow-gray-700">
+        <span>Latest Blogs</span>
+        <span><MdOutlineTimer className="w-6 h-6" /></span>
       </h1>
-
-      <div className="flex justify-center mb-1">
-        <button
-          onClick={() => setFiltersVisible(!filtersVisible)}
-          className="flex items-center justify-between w-full bg-gray-200 dark:bg-gray-700 dark:text-gray-200 text-gray-700 px-4 py-2 rounded-md flex items-center gap-2 hover:bg-gray-300"
-        >
-          <div className="flex items-center justify-center">
-            <Filter className="w-5 h-5" />
-            <span>Filters</span>
-          </div>
-          <div className="flex items-center justify-center">
-            {filtersVisible ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-          </div>
-        </button>
-      </div>
-
-      {filtersVisible && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg mb-6 flex flex-wrap gap-1 justify-center px-2">
-        <div className="w-full">
-          <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">
+        <div className="bg-white dark:bg-gray-800 rounded-lg mb-8 flex flex-wrap gap-4 justify-center px-2">
+        <div>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Category
           </label>
           <select
             value={selectedCategory || ""}
             onChange={(e) => setSelectedCategory(Number(e.target.value))}
-            className="block w-full border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 
-            text-gray-900 dark:text-gray-200 rounded-md shadow-sm focus:ring-gray-500 focus:border-gray-500 sm:text-sm"
+            className="text-sm ml-2 p-1 bg-gray-200 dark:bg-gray-700 dark:text-white rounded"
           >
             <option value="">Select Category</option>
             {categories.map((cat) => (
@@ -120,15 +130,14 @@ const LatestBlogs = () => {
             ))}
           </select>
         </div>
-        <div className="w-full">
-          <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">
+        <div>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Subcategory
           </label>
           <select
             value={selectedSubcategory || ""}
             onChange={(e) => setSelectedSubcategory(Number(e.target.value))}
-            className="block w-full border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 
-            text-gray-900 dark:text-gray-200 rounded-md shadow-sm focus:ring-gray-500 focus:border-gray-500 sm:text-sm"
+            className="text-sm ml-2 p-1 bg-gray-200 dark:bg-gray-700 dark:text-white rounded"
           >
             <option value="">Select Subcategory</option>
             {getSubcategories().map((subcategory) => (
@@ -139,8 +148,8 @@ const LatestBlogs = () => {
           </select>
         </div>
 
-        <div className="w-full">
-          <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">
+        <div>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Author
           </label>
           <input
@@ -148,113 +157,191 @@ const LatestBlogs = () => {
             placeholder="Enter author name"
             value={author}
             onChange={(e) => setAuthor(e.target.value)}
-            className="block w-full border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 
-            text-gray-900 dark:text-gray-200 rounded-md shadow-sm focus:ring-gray-500 focus:border-gray-500 sm:text-sm"
+            className="text-sm ml-2 p-1 bg-gray-200 dark:bg-gray-700 dark:text-white rounded"
           />
         </div>
-        <div className="w-full">
-          <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">
-            Tags
-          </label>
-          <Select
-            isMulti
-            options={tags.map(tag => ({ value: tag.id, label: tag.name }))}
-            value={selectedTags}
-            onChange={(selectedOptions) => setSelectedTags(selectedOptions as { value: number; label: string }[])}
-            className="w-full dark:text-gray-200 dark:bg-gray-800"
-            placeholder="Select Tags"
-          />
-        </div>
-        <div className="w-full">
-          <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">
+        <div>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Minimum Views
           </label>
-          <input
-            type="number"
-            placeholder="Enter minimum views"
+          <select
             value={minViews || ""}
             onChange={(e) => setMinViews(Number(e.target.value))}
-            className="block w-full border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 
-            text-gray-900 dark:text-gray-200 rounded-md shadow-sm focus:ring-gray-500 focus:border-gray-500 sm:text-sm"
-          />
+            className="text-sm ml-2 p-1 bg-gray-200 dark:bg-gray-700 dark:text-white rounded"
+          >
+            <option value="">Select Minimum Views</option>
+            <option value="100">50</option>
+            <option value="100">100</option>
+            <option value="500">500</option>
+            <option value="1000">1k</option>
+            <option value="5000">5k</option>
+            <option value="10000">10k</option>
+            <option value="20000">20k</option>
+            <option value="50000">50k</option>
+            <option value="100000">100k</option>
+            <option value="250000">250k</option>
+            <option value="500000">500k</option>
+            <option value="1000000">1M</option>
+          </select>
         </div>
-        <div className="w-full">
-          <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">
+
+        <div>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Start Date
           </label>
           <input
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="block w-full border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 
-            text-gray-900 dark:text-gray-200 rounded-md shadow-sm focus:ring-gray-500 focus:border-gray-500 sm:text-sm"
+            className="text-sm ml-2 p-1 bg-gray-200 dark:bg-gray-700 dark:text-white rounded"
             placeholder="Start Date"
           />
         </div>
-        <div className="w-full">
-          <label className="block text-gray-700 dark:text-gray-200 text-sm font-medium mb-1">
+        <div>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
             End Date
           </label>
           <input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="block w-full border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 
-            text-gray-900 dark:text-gray-200 rounded-md shadow-sm focus:ring-gray-500 focus:border-gray-500 sm:text-sm"
+            className="text-sm ml-2 p-1 bg-gray-200 dark:bg-gray-700 dark:text-white rounded"
             placeholder="End Date"
           />
         </div>
-        <div className="w-full flex justify-center">
-          <button
-            onClick={fetchBlogs}
-            className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
-          >
-            Apply Filters
-          </button>
-        </div>
-      </div>
-      
-      )}
-      {loading && <p className="text-center text-gray-500">Loading...</p>}
-      {error && <p className="text-center text-red-500">{error}</p>}
-
-      {blogs.length === 0 && !loading && (
-        <p className="text-center text-gray-500">No blogs found</p>
-      )}
-
-      <div>
-        {blogs.map((blog) => (
-          <div key={blog.id} className="bg-white dark:bg-gray-800 mt-8">
-            <h2 className="text-xl font-semibold text-indigo-700 dark:text-indigo-700">
-              <Link href={`/posts/getBlogsById/${blog.id}`} className="hover:text-indigo-800">
-                {blog.title}
-              </Link>
-            </h2>
-            <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mt-2">
-              <span className="flex items-center">
-                <Eye className="w-4 h-4 mr-1" /> {blog.total_views}
-              </span>
-              <span>By: {blog.author}</span>
-              <span>{blog.category}</span>
-              {isAuthenticated && Number(session.user.id) === Number(blog.author) && (
-                <span><Link className="text-indigo-600" href={`/posts/view-analytics/${blog.id}`}>View analytics</Link></span>
-              )}
-            </div>
-            <div 
-              className="text-gray-700 dark:text-gray-300 mt-2 line-clamp-3 text-justify whitespace-pre-wrap"
-              dangerouslySetInnerHTML={{
-                __html: blog.content.split(" ").slice(0, 200).join(" ") + "..."
-              }}
+        <div className="flex items-center">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Tags</label>
+            <input
+              type="text"
+              placeholder="Apply tags"
+              value={tagSearch}
+              onChange={handleTagSearchChange} 
+              className="text-sm ml-2 p-1 rounded bg-gray-200 dark:bg-gray-700 dark:text-white"
             />
-            <Link
-              href={`/posts/getBlogsById/${blog.id}`}
-              className="text-indigo-700 hover:text-indigo-800 block text-sm font-semibold mt-2"
-            >
-              Read more
-            </Link>
+            {tagSearch && filteredTags.length > 0 && (
+              <ul className="text-sm mt-2 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg">
+                {filteredTags.map(tag => (
+                  <li
+                    key={tag.id}
+                    className="cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 p-1"
+                    onClick={() => handleTagSelect(tag)}
+                  >
+                    {tag.name}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-        ))}
+          <button
+            onClick={resetFilters}
+            className="text-sm px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded"
+          >
+            Reset Filters
+          </button>
       </div>
+      {selectedTags.length > 0 && (
+          <div className="flex justify-center items-center mb-8">
+              <div className="flex flex-wrap flex justify-center items-center gap-2"><span> Selected tags:</span> 
+                {selectedTags.map((tag) => (
+                  <span
+                    key={tag.value}
+                    className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white p-2 rounded flex items-center"
+                  > 
+                    {tag.label}
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag.value)}
+                      className="ml-2 text-red-500"
+                    >
+                      X
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+      
+      {loading ? (
+        <div className="w-full space-y-6">
+          {[...Array(4)].map((_, index) => (
+            <div
+              key={index}
+              className="bg-white dark:bg-gray-900 rounded-lg shadow-lg px-5 py-3 border border-gray-200 dark:border-gray-700 w-full animate-pulse"
+            >
+              <div className="bg-gradient-to-r text-gray-800 dark:text-white rounded-t-lg py-2 mb-4">
+                <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
+              </div>
+              <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-3">
+                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
+                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
+                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded-full w-1/6"></div>
+              </div>
+              <div className="space-y-2">
+                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full"></div>
+                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full"></div>
+                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
+              </div>
+              <div className="mt-4 flex justify-between items-center">
+                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
+                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          {error && <p className="text-center text-red-500">{error}</p>}
+          {blogs.length === 0 && !loading && <p className="text-center text-gray-500">No blogs found</p>}
+          
+          <div className="w-full">
+            {blogs.map((blog) => (
+              <div
+                key={blog.id}
+                className="bg-white dark:bg-gray-900 rounded-lg shadow-lg hover:shadow-xl transition-shadow px-5 py-4 border border-gray-200 dark:border-gray-700 mb-6 w-full"
+              >
+                <div className="bg-gradient-to-r text-gray-800 dark:text-white rounded-t-lg py-2 mb-3">
+                  <h2 className="text-md lg:text-lg font-semibold">
+                    <Link href={`/posts/getBlogsById/${blog.id}`} className="hover:text-indigo-800 transition">
+                      {blog.title}
+                    </Link>
+                  </h2>
+                </div>
+                <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  <span className="flex items-center">
+                    <Eye className="w-4 h-4 mr-1" /> {blog.total_views}
+                  </span>
+                  <span className="font-medium">By: {blog.author}</span>
+                  <span className="bg-indigo-100 dark:bg-indigo-700 text-indigo-700 dark:text-white px-2 py-1 rounded-full text-xs font-semibold">
+                    {blog.category}
+                  </span>
+                </div>
+                <div 
+                  className="text-sm lg:text-md text-gray-700 dark:text-gray-300 text-justify line-clamp-3 whitespace-pre-wrap leading-relaxed"
+                  dangerouslySetInnerHTML={{
+                    __html: blog.content.split(" ").slice(0, 50).join(" ") + "...",
+                  }}
+                />
+                <div className="mt-4 flex justify-between items-center">
+                  <Link
+                    href={`/posts/getBlogsById/${blog.id}`}
+                    className="text-indigo-700 hover:text-indigo-900 font-medium text-sm"
+                  >
+                    Read more →
+                  </Link>
+                  {isAuthenticated && Number(session.user.id) === Number(blog.author) && (
+                    <Link
+                      href={`/posts/view-analytics/${blog.id}`}
+                      className="text-gray-500 hover:text-gray-700 dark:hover:text-white text-xs"
+                    >
+                      View Analytics
+                    </Link>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 };
