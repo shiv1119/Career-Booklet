@@ -7,7 +7,7 @@ from app.schemas.blogs import BlogCreateSchema, BlogResponseSchema, CategorySche
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.sql import func, extract
 from sqlalchemy.orm import joinedload
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, text
 
 router = APIRouter()
 def get_db():
@@ -521,6 +521,7 @@ def get_user_views(
         "end_date": str(now),
         "group_by": group_by,
         "views": results_current,
+        "total_views_current": total_current_views,
         "percentage_change": percentage_change,
     }
 
@@ -593,3 +594,88 @@ def get_all_tags(db: db_dependency):
         return tags
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/blogs/user/top/", response_model=dict)
+def get_top_blogs_by_views(
+    db: db_dependency,
+    request: Request,
+    group_by: str = Query("daily", regex="^(daily|monthly|yearly)$", description="Group views by 'daily', 'monthly', or 'yearly'"),
+    period: int = Query(1, ge=1, le=365, description="Time range for the data (days for daily, months for monthly, and years for yearly)"),
+):
+    now = datetime.now(timezone.utc)
+    user_id = request.headers.get("x-user-id")
+
+    if group_by == "daily":
+        start_date = now - timedelta(days=period)
+        group_func = func.date(BlogView.view_date)
+        label = "day"
+    elif group_by == "monthly":
+        start_date = now - timedelta(days=30 * period)
+        group_func = func.concat(
+            extract("year", BlogView.view_date),
+            "-",
+            func.to_char(extract("month", BlogView.view_date), 'FM00')
+        )
+        label = "year_month"
+    elif group_by == "yearly":
+        start_date = now - timedelta(days=365 * period)
+        group_func = extract("year", BlogView.view_date)
+        label = "year"
+
+    blogs = db.query(Blog).filter(Blog.author == user_id).all()
+    if not blogs:
+        raise HTTPException(status_code=404, detail="No blogs found for this user")
+
+    blog_titles = {blog.id: blog.title for blog in blogs}
+    blog_ids = list(blog_titles.keys())
+
+    blog_views = (
+        db.query(
+            BlogView.blog_id,
+            group_func.label(label),
+            func.sum(BlogView.view_count).label("total_views"),
+        )
+        .filter(BlogView.blog_id.in_(blog_ids), BlogView.view_date >= start_date)
+        .group_by(BlogView.blog_id, group_func)
+        .order_by(func.sum(BlogView.view_count).desc())
+        .all()
+    )
+
+    blog_data: Dict[int, List[Dict[str, Any]]] = {}
+    total_blog_views: Dict[int, int] = {}
+
+    for row in blog_views:
+        blog_id = row.blog_id
+        if blog_id not in blog_data:
+            blog_data[blog_id] = []
+            total_blog_views[blog_id] = 0
+
+        if group_by == "daily":
+            formatted_label = row.day.strftime("%d %b")
+        elif group_by == "monthly":
+            year_month = row.year_month.split("-")
+            formatted_label = f"{datetime(int(year_month[0]), int(year_month[1]), 1).strftime('%b')} {year_month[0]}"
+        elif group_by == "yearly":
+            formatted_label = str(row.year)
+
+        blog_data[blog_id].append({"group": formatted_label, "total_views": row.total_views})
+        total_blog_views[blog_id] += row.total_views
+
+    top_5_blogs = sorted(total_blog_views.items(), key=lambda x: x[1], reverse=True)[:5]
+
+    top_5_blogs_data = [
+        {
+            "blog_id": blog_id,
+            "title": blog_titles[blog_id],
+            "total_views_in_period": total_blog_views[blog_id], 
+            "views_by_period": blog_data[blog_id] 
+        }
+        for blog_id, _ in top_5_blogs
+    ]
+
+    return {
+        "start_date": str(start_date),
+        "end_date": str(now),
+        "group_by": group_by,
+        "top_5_blogs": top_5_blogs_data,
+    }

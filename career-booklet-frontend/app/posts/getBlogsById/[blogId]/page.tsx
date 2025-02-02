@@ -32,13 +32,39 @@ const BlogDetails = () => {
     fetchBlog();
   }, [blogId]); 
 
-  if (loading) return <p className="flex justify-center items-center">Loading...</p>;
-  if (error) return <p>{error}</p>;
-  if (!blog) return <p>Blog not found</p>;
+  if (loading) return (
+      <div className="min-h-screen py-1 px-1 bg-white dark:bg-gray-800 max-w-3xl animate-pulse">
+        <div className="h-10 w-3/4 bg-gray-200 dark:bg-gray-700 rounded-md mx-auto mb-4"></div>
+
+        <div className="flex flex-col text-sm text-gray-600 dark:text-gray-400 mb-4 gap-2">
+          <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+          <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+          <div className="h-4 w-40 bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+          {isAuthenticated && Number(session.user.id) === Number(blog?.author) && (
+          <div className="h-4 w-28 bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+        )}
+        </div>
+        <div className="space-y-4">
+          <div className="h-40 w-full bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+          <div className="h-80 w-full bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+          <div className="h-40 w-full bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+          <div className="h-60 w-full bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+          <div className="h-40 w-full bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+        </div>
+        <div className="mt-4 flex gap-2">
+          <div className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+          <div className="h-5 w-14 bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+          <div className="h-5 w-20 bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+        </div>
+      <div className="mt-4 h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+    </div>
+  );
+  if (error) return <p className="min-h-screen">{error}</p>;
+  if (!blog) return <p className="min-h-screen">Blog not found</p>;
 
   return (
     <div className="min-h-screen py-1 px-1 bg-white dark:bg-gray-800 max-w-3xl">
-      <h1 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white text-center">
+      <h1 className="text-xl font-bold mb-4 text-gray-900 dark:text-white text-center">
         {blog.title}
       </h1>
 
@@ -49,8 +75,8 @@ const BlogDetails = () => {
         <div>Category: {blog.category}</div>
         <div>Subcategory: {blog.subcategory}</div>
         {isAuthenticated && Number(session.user.id) === Number(blog.author) && (
-                <div><Link className="text-indigo-600" href={`/posts/view-analytics/${blog.id}`}>View analytics</Link></div>
-              )}
+          <div><Link className="text-indigo-600" href={`/posts/view-analytics/${blog.id}`}>View analytics</Link></div>
+        )}
       </div>
 
       <div 
