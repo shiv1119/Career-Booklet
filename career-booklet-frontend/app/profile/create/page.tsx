@@ -87,7 +87,8 @@ const CreateProfilePage = () => {
       console.error(error);
     }
   };
-  
+
+
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6">
@@ -154,10 +155,10 @@ const CreateProfilePage = () => {
               className="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900"
             >
               <option value="" disabled>Select Pronouns</option>
-              <option value="he/him">He/Him</option>
-              <option value="she/her">She/Her</option>
-              <option value="they/them">They/Them</option>
-              <option value="other">Other</option>
+              <option value="He/Him">He/Him</option>
+              <option value="She/Her">She/Her</option>
+              <option value="They/Them">They/Them</option>
+              <option value="Other">Other</option>
             </select>
           </div>
 
