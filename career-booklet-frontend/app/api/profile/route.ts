@@ -18,14 +18,14 @@ export const createProfile = async (formData: any, token: any) => {
 
 export const getProfile = async (token: any) => {
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_APIGATEWAY_SERVICES}?service=profile_service&path=/api/profile/`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY}?service=profile_service&path=/api/profile/`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
         });
-        return response;
+        return response.json();
             } catch (error) {
                 console.error('Error getting profile:', error);
                 throw error;
@@ -285,7 +285,7 @@ export const createUpdateCauses = async(token: any, causes : any) => {
   try{
     const response = await fetch(`http://127.0.0.1:9002?service=profile_service&path=/api/user/{auth_user_id}/causes`,{
       method: 'POST',
-      headers: { 
+      headers: {
         'Authorization': `Bearer ${token}`,
       },
       body: causes,

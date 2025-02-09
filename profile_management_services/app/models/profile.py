@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Boolean, Date, DateTime, ForeignKey, Text
+from sqlalchemy import Column, String, Integer, Boolean, Date, DateTime, ForeignKey, Text, UniqueConstraint
 from app.core.database import Base
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
@@ -368,3 +368,18 @@ class TestScoreAssociation(Base):
     updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     test_score = relationship("TestScore", back_populates="associations")
+
+
+
+#followers table
+
+class Follow(Base):
+    __tablename__ = "follows"
+
+    id = Column(Integer, primary_key=True, index=True)
+    follower_id = Column(Integer, nullable=False)
+    following_id = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=func.now())
+    is_active = Column(Boolean, default=True)
+
+    __table_args__ = (UniqueConstraint("follower_id", "following_id", name="unique_follow"),)

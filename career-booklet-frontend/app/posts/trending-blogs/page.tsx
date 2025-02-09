@@ -101,6 +101,16 @@ const TrendingBlogs = () => {
     setSearch(e.target.value);
   };
 
+  const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      fetchBlogs();
+    }
+  };
+  
+  const handleSearchClick = () => {
+    fetchBlogs();
+  };
+
   const handleTagSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTagSearch(e.target.value);
   };
@@ -174,21 +184,28 @@ const TrendingBlogs = () => {
               className="text-sm ml-2 p-1 bg-gray-200 dark:bg-gray-700 dark:text-white rounded"
             />
           </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
+          <div className="relative">
             <input
               type="text"
               placeholder="Search blogs..."
               value={search}
               onChange={handleSearchChange}
-              className="text-sm ml-2 p-1 bg-gray-200 dark:bg-gray-700 dark:text-white rounded"
+              onKeyDown={handleSearchKeyPress}
+              className="text-sm p-1 pl-2 pr-8 bg-gray-200 dark:bg-gray-700 dark:text-white rounded w-full"
             />
+            <button 
+              onClick={handleSearchClick}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
+            >
+              🔍
+            </button>
           </div>
+
           <div className="flex items-center">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Tags</label>
             <input
               type="text"
-              placeholder="Enter tags, separated by commas"
+              placeholder="Apply Tags"
               value={tagSearch}
               onChange={handleTagSearchChange} 
               className="text-sm ml-2 p-1 rounded w-full bg-gray-200 dark:bg-gray-700 dark:text-white"
@@ -222,9 +239,9 @@ const TrendingBlogs = () => {
                 {selectedTags.map((tag) => (
                   <span
                     key={tag.value}
-                    className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white p-2 rounded flex items-center"
+                    className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white px-2 py-1 rounded flex items-center"
                   > 
-                    {tag.label}
+                    #{tag.label}
                     <button
                       type="button"
                       onClick={() => removeTag(tag.value)}
@@ -246,22 +263,22 @@ const TrendingBlogs = () => {
               key={index}
               className="bg-white dark:bg-gray-900 rounded-lg shadow-lg px-5 py-3 border border-gray-200 dark:border-gray-700 w-full animate-pulse"
             >
-              <div className="bg-gradient-to-r text-gray-800 dark:text-white rounded-t-lg py-2 mb-4">
-                <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
+              <div className="bg-gradient-to-r text-gray-800 dark:text-white rounded-t-lg py-2 mb-3">
+                <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
               </div>
               <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-3">
-                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
-                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
-                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded-full w-1/6"></div>
+                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
+                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
+                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded-full w-1/6"></div>
               </div>
               <div className="space-y-2">
-                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full"></div>
-                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full"></div>
-                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
+                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-full"></div>
+                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-full"></div>
+                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
               </div>
-              <div className="mt-4 flex justify-between items-center">
-                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
-                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
+              <div className="mt-3 flex justify-between items-center">
+                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
+                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
               </div>
             </div>
           ))}
@@ -277,20 +294,20 @@ const TrendingBlogs = () => {
                 key={blog.id}
                 className="bg-white dark:bg-gray-900 rounded-lg shadow-lg hover:shadow-xl transition-shadow px-5 py-4 border border-gray-200 dark:border-gray-700 mb-6 w-full"
               >
-                <div className="bg-gradient-to-r text-gray-800 dark:text-white rounded-t-lg py-2 mb-3">
+                <div className="bg-gradient-to-r text-gray-800 dark:text-white rounded-t-lg py-1 mb-1">
                   <h2 className="text-md lg:text-lg font-semibold">
                     <Link href={`/posts/getBlogsById/${blog.id}`} className="hover:text-indigo-800 transition">
                       {blog.title}
                     </Link>
                   </h2>
                 </div>
-                <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-3">
+                <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
                   <span className="flex items-center">
                     <Eye className="w-4 h-4 mr-1" /> {blog.total_views}
                   </span>
-                  <span className="font-medium">By: {blog.author}</span>
+                  <span className="font-medium">By: {session?.user?.name|| blog.author}</span>
                   <span className="bg-indigo-100 dark:bg-indigo-700 text-indigo-700 dark:text-white px-2 py-1 rounded-full text-xs font-semibold">
-                    {blog.category}
+                  <Link href="/posts/postByCategories">{blog.category}</Link>
                   </span>
                 </div>
                 <div 
@@ -299,7 +316,7 @@ const TrendingBlogs = () => {
                     __html: blog.content.split(" ").slice(0, 50).join(" ") + "...",
                   }}
                 />
-                <div className="mt-4 flex justify-between items-center">
+                <div className="mt-1 flex justify-between items-center">
                   <Link
                     href={`/posts/getBlogsById/${blog.id}`}
                     className="text-indigo-700 hover:text-indigo-900 font-medium text-sm"

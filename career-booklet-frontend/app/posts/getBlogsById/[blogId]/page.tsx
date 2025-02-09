@@ -68,7 +68,7 @@ const BlogDetails = () => {
         {blog.title}
       </h1>
 
-      <div className="flex-row items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-4">
+      <div className="flex-row items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
         <div className="flex items-center">
           <Eye className="w-4 h-4 mr-1" /> {blog.total_views}
         </div>
@@ -94,7 +94,9 @@ const BlogDetails = () => {
           ))}
         </span>
       </div>
-      <div className="mt-4">By: {blog.author}</div>
+      <div className="mt-4"> 
+        <div>By: {session?.user?.name || blog.author}</div>
+        </div>
     </div>
   );
 };
