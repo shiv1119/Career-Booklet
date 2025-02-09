@@ -1,6 +1,6 @@
 'use client'
 import React, { ReactNode, useEffect, useState } from "react";
-import { FaEnvelope, FaMoon, FaSun } from 'react-icons/fa';
+import { FaMoon, FaSun } from 'react-icons/fa';
 // import { GoVideo } from 'react-icons/go';
 import { IoSettings } from "react-icons/io5";
 import { MdHelp } from "react-icons/md";
@@ -20,7 +20,6 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); 
   const [isBlogsDropdownOpen, setIsBlogsDropdownOpen] = useState(false);
-  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const router = useRouter();
   const toggleMode = () => {
     setIsDarkMode(!isDarkMode);
@@ -33,9 +32,7 @@ const Navbar: React.FC<NavbarProps> = ({ children }) => {
 const blogsToggleDropdown = () => {
   setIsBlogsDropdownOpen(prev => !prev);
 };
-const categoryToggleDropdown = () => {
-  setIsCategoryDropdownOpen(prev => !prev);
-};
+
   const handleLogout = () => {
     signOut({ 
       redirect: true,
@@ -98,17 +95,11 @@ const categoryToggleDropdown = () => {
                   <div className="relative pl-2">
                     <button onClick={toggleDropdown} type="button" className="flex items-center text-sm bg-gray-800 rounded-full focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600">
                       <span className="sr-only">Open user menu</span>
-                      <img className="w-8 h-8 rounded-full" src="https://flowbite.com/docs/images/people/profile-picture-5.jpg" alt="user photo" />
+                      <img className="w-10 h-10 rounded-full" src={session?.user?.image || "https://flowbite.com/docs/images/people/profile-picture-5.jpg"} alt="user photo" />
                     </button>
                     {isDropdownOpen && (
                       <div className="absolute right-0 mt-2 w-auto bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-lg">
                         <ul className="py-1 text-sm">
-                          <li>
-                            <Link href='/profile' className="flex  items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-600">
-                            <FaEnvelope className="mr-2"/>
-                            {session?.user?.email}
-                            </Link>
-                          </li>
                           <li>
                             <Link href="/profile" className="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-600">
                               <BiUser className="mr-2" />
@@ -116,9 +107,9 @@ const categoryToggleDropdown = () => {
                             </Link>
                           </li>
                           <li>
-                            <button onClick={handleLogout} className="flex items-center p-2 w-full hover:bg-gray-100 dark:hover:bg-gray-600">
+                            <button onClick={handleLogout} className="flex flex-row w-full items-center p-2 w-full hover:bg-gray-100 dark:hover:bg-gray-600">
                               <RiLogoutBoxLine className="mr-2" />
-                              Sign out
+                              <span className="truncate">Sign out</span>
                             </button>
                           </li>
                         </ul>
@@ -279,69 +270,6 @@ const categoryToggleDropdown = () => {
                         />
                       </svg>
                     </Link>
-                  </li>
-                  <li>
-                    <button
-                      onClick={categoryToggleDropdown}
-                      className="flex py-1 px-2 items-center justify-between text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group w-full"
-                    >
-                      <span className="whitespace-nowrap">Blogs by category</span>
-                      <svg
-                        className="w-5 h-5 transition-transform duration-200"
-                        style={{ transform: isCategoryDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth={1.5}
-                        stroke="currentColor"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                      </svg>
-                    </button>
-                    {isCategoryDropdownOpen && (
-                      <ul className="pl-3">
-                        <li className="flex items-center justify-between">
-                          <Link
-                            href="/posts/technology"
-                            className="block px-1 py-1 text-gray-700 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
-                          >
-                            Technology
-                          </Link>
-                        </li>
-                        <li className="flex items-center justify-between">
-                          <Link
-                            href="/posts/sports"
-                            className="block px-1 py-1 text-gray-700 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
-                          >
-                            Sports
-                          </Link>
-                        </li>
-                        <li className="flex items-center justify-between">
-                          <Link
-                            href="/posts/news"
-                            className="block px-1 py-1 text-gray-700 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
-                          >
-                            News
-                          </Link>
-                        </li>
-                        <li className="flex items-center justify-between">
-                          <Link
-                            href="/posts/engineering"
-                            className="block px-1 py-1 text-gray-700 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
-                          >
-                            Engineering
-                          </Link>
-                        </li>
-                        <li className="flex items-center justify-between">
-                          <Link
-                            href="/posts/entertainment"
-                            className="block px-1 py-1 text-gray-700 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
-                          >
-                            Entertainment
-                          </Link>
-                        </li>
-                      </ul>
-                    )}
                   </li>
                 </ul>
               )}

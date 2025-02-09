@@ -268,22 +268,22 @@ const LatestBlogs = () => {
               key={index}
               className="bg-white dark:bg-gray-900 rounded-lg shadow-lg px-5 py-3 border border-gray-200 dark:border-gray-700 w-full animate-pulse"
             >
-              <div className="bg-gradient-to-r text-gray-800 dark:text-white rounded-t-lg py-2 mb-4">
-                <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
+              <div className="bg-gradient-to-r text-gray-800 dark:text-white rounded-t-lg py-2 mb-2">
+                <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
               </div>
               <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-3">
-                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
-                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
-                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded-full w-1/6"></div>
+                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
+                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
+                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded-full w-1/6"></div>
               </div>
               <div className="space-y-2">
-                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full"></div>
-                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full"></div>
-                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
+                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-full"></div>
+                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-full"></div>
+                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
               </div>
-              <div className="mt-4 flex justify-between items-center">
-                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
-                <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
+              <div className="mt-3 flex justify-between items-center">
+                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
+                <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/6"></div>
               </div>
             </div>
           ))}
@@ -299,20 +299,20 @@ const LatestBlogs = () => {
                 key={blog.id}
                 className="bg-white dark:bg-gray-900 rounded-lg shadow-lg hover:shadow-xl transition-shadow px-5 py-4 border border-gray-200 dark:border-gray-700 mb-6 w-full"
               >
-                <div className="bg-gradient-to-r text-gray-800 dark:text-white rounded-t-lg py-2 mb-3">
+                <div className="bg-gradient-to-r text-gray-800 dark:text-white rounded-t-lg mb-1">
                   <h2 className="text-md lg:text-lg font-semibold">
                     <Link href={`/posts/getBlogsById/${blog.id}`} className="hover:text-indigo-800 transition">
                       {blog.title}
                     </Link>
                   </h2>
                 </div>
-                <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-3">
+                <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
                   <span className="flex items-center">
                     <Eye className="w-4 h-4 mr-1" /> {blog.total_views}
                   </span>
                   <span className="font-medium">By: {blog.author}</span>
                   <span className="bg-indigo-100 dark:bg-indigo-700 text-indigo-700 dark:text-white px-2 py-1 rounded-full text-xs font-semibold">
-                    {blog.category}
+                    <Link href="/posts/postByCategories">{blog.category}</Link>
                   </span>
                 </div>
                 <div 
@@ -321,7 +321,7 @@ const LatestBlogs = () => {
                     __html: blog.content.split(" ").slice(0, 50).join(" ") + "...",
                   }}
                 />
-                <div className="mt-4 flex justify-between items-center">
+                <div className="mt-1 flex justify-between items-center">
                   <Link
                     href={`/posts/getBlogsById/${blog.id}`}
                     className="text-indigo-700 hover:text-indigo-900 font-medium text-sm"

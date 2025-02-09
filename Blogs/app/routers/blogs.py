@@ -239,6 +239,45 @@ def get_trending_blogs(
 
     return format_blogs_response(trending_blogs)
 
+@router.get("/blogs/tags", response_model=List[BlogResponseSchema])
+def get_blogs_by_tags(
+    db: db_dependency,
+    limit: int = Query(10, ge=1, description="Number of blogs to return"),
+    skip: int = Query(0, ge=0, description="Number of blogs to skip"),
+    tag_name: Optional[str] = Query(None, description="Filter blogs based on tags"),
+    category_id: Optional[int] = Query(None, description="Filter blogs by category ID"),
+    subcategory_id: Optional[int] = Query(None, description="Filter blogs by subcategory ID"),
+    author: Optional[str] = Query(None, description="Filter by author's name"),
+):
+    
+    if tag_name:
+        tag_name = tag_name.strip().lower()
+        tag = db.query(Tag).filter(Tag.name == tag_name).first()
+
+    if category_id:
+        query = query.filter(Blog.category_id == category_id)
+
+    if subcategory_id:
+        query = query.filter(Blog.subcategory_id == subcategory_id)
+
+    if author:
+        query = query.filter(Blog.author.ilike(f"%{author}%"))
+
+    blogs = (
+        db.query(Blog)
+        .join(blog_tag_association)
+        .filter(blog_tag_association.c.tag_id == tag.id)
+        .filter(Blog.status == "published") 
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+    if not blogs:
+        raise HTTPException(status_code=404, detail="No blogs found with the given tag")
+    
+    return format_blogs_response(blogs)
+
 @router.get("/blogs/most-watched", response_model=List[BlogResponseSchema])
 def get_most_watched_blogs(
     db: Session = Depends(get_db),
@@ -313,33 +352,6 @@ def get_blogs_by_subcategory(
         raise HTTPException(status_code=404, detail="No blogs found in this subcategory")
     return format_blogs_response(blogs)
 
-@router.get("/blogs/tags", response_model=List[BlogResponseSchema])
-def get_blogs_by_tags(
-    tag_name: str,
-    db: db_dependency,
-    limit: int = Query(10, ge=1, description="Number of blogs to return"),
-    skip: int = Query(0, ge=0, description="Number of blogs to skip")
-):
-    tag_name = tag_name.strip().lower()
-    tag = db.query(Tag).filter(Tag.name == tag_name).first()
-    
-    if not tag:
-        raise HTTPException(status_code=404, detail="Tag not found")
-    blogs = (
-        db.query(Blog)
-        .join(blog_tag_association)
-        .filter(blog_tag_association.c.tag_id == tag.id)
-        .filter(Blog.status == "published") 
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
-    
-    if not blogs:
-        raise HTTPException(status_code=404, detail="No blogs found with the given tag")
-    
-    return format_blogs_response(blogs)
-
 @router.get("/blogs/trending/category/{category_id}", response_model=List[BlogResponseSchema])
 @router.get("/blogs/trending/subcategory/{subcategory_id}", response_model=List[BlogResponseSchema])
 def get_trending_blogs_for_category_or_subcategory(
@@ -377,6 +389,7 @@ def get_trending_blogs_for_category_or_subcategory(
         raise HTTPException(status_code=404, detail="No trending blogs found")
 
     return format_blogs_response(trending_blogs)
+
 @router.post("/blogs/by_id/increment-view/", response_model=dict)
 def increment_view(blog_id: int, db: Session = Depends(get_db)):
     today = datetime.now().date()
@@ -538,12 +551,6 @@ def get_latest_blogs(
     min_views: Optional[int] = Query(None, ge=0),
     tag_ids: Optional[List[int]] = Query(None),
 ):
-    print(
-        f"Received parameters - page: {page}, page_size: {page_size}, category_id: {category_id}, "
-        f"subcategory_id: {subcategory_id}, author: {author}, start_date: {start_date}, "
-        f"end_date: {end_date}, min_views: {min_views}, tag_ids: {tag_ids}"
-    )
-    
     offset = (page - 1) * page_size
 
     query = db.query(Blog).filter(Blog.status == "published")
@@ -679,3 +686,4 @@ def get_top_blogs_by_views(
         "group_by": group_by,
         "top_5_blogs": top_5_blogs_data,
     }
+

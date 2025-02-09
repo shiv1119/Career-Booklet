@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useSession, getSession } from "next-auth/react";
 import { updateProfileImage, updateBackgroundImage } from "@/app/api/profile/route";
+import { RxCross1 } from "react-icons/rx";
 
 const UpdateImagesPage = () => {
   const [profileImage, setProfileImage] = useState<File | null>(null);
@@ -162,11 +163,10 @@ const UpdateImagesPage = () => {
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
                 Upload Profile Image
               </h3>
-              <button
-                onClick={() => closeModal("profile")}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                &times;
+              <button onClick={() => closeModal("profile")}
+              className="text-gray-500 text-xl hover:text-gray-700 hover:bg-gray-200 rounded-full p-2"
+                >
+                <RxCross1 />
               </button>
             </div>
             <div className="flex items-center justify-center mb-4">
@@ -213,11 +213,10 @@ const UpdateImagesPage = () => {
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
                 Upload Banner Image
               </h3>
-              <button
-                onClick={() => closeModal("banner")}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                &times;
+              <button onClick={() => closeModal("banner")}
+              className="text-gray-500 text-xl hover:text-gray-700 hover:bg-gray-200 rounded-full p-2"
+                >
+                <RxCross1 />
               </button>
             </div>
             <div className="flex items-center justify-center mb-4">

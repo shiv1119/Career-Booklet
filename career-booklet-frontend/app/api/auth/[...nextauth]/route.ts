@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import type { NextAuthOptions, DefaultSession } from "next-auth";
 import type { JWT } from "next-auth/jwt";
+import { getProfile } from "../../profile/route";
 
 interface UserWithTokens {
   id: string;
@@ -17,7 +18,10 @@ interface Token extends JWT {
   refreshToken: string;
   expiresIn: number;
   accessTokenExpires: number;
+  refreshTokenExpires: number;
   id?: number;
+  name?: string;
+  image?: string;
 }
 
 declare module "next-auth" {
@@ -25,6 +29,8 @@ declare module "next-auth" {
     user: {
       accessToken?: string;
       id?: number;
+      name?: string;
+      image?: string;
     } & DefaultSession["user"];
   }
 }
@@ -39,7 +45,7 @@ const authOptions: NextAuthOptions = {
         login_otp: { label: "LoginOTP", type: "string" },
         email: { label: "ActivationEmail", type: "string" },
         activation_otp: { label: "ActivationOTP", type: "string" },
-        recover_otp: {label: "RecoverOTP", type: "string"},
+        recover_otp: { label: "RecoverOTP", type: "string" },
       },
       async authorize(credentials) {
         let url = "";
@@ -63,7 +69,7 @@ const authOptions: NextAuthOptions = {
             email_or_phone: credentials.email_or_phone,
             otp: credentials.login_otp,
           };
-        } else if (credentials?.recover_otp){
+        } else if (credentials?.recover_otp) {
           url = `${process.env.NEXT_PUBLIC_AUTH_SERVICE}/api/auth/recover-account`;
           body = {
             email: credentials.email,
@@ -105,10 +111,16 @@ const authOptions: NextAuthOptions = {
         token.accessToken = userWithTokens.tokens.access_token;
         token.refreshToken = userWithTokens.tokens.refresh_token;
         token.expiresIn = 86400;
-        token.accessTokenExpires = currentTime + 86400 * 1000; 
+        token.accessTokenExpires = currentTime + 86400 * 1000;
         token.refreshTokenExpires = currentTime + 7 * 86400 * 1000;
       
         console.log(userWithTokens);
+
+        const profile = await getProfile((token as Token).accessToken);
+        if (profile) {
+          token.name = profile.full_name;
+          token.image = profile.profile_image;
+        }
       }
 
       if (typeof token.accessTokenExpires === "number" && currentTime > token.accessTokenExpires) {
@@ -147,6 +159,8 @@ const authOptions: NextAuthOptions = {
         ...session.user,
         accessToken: (token as Token).accessToken,
         id: (token as Token).id,
+        name: (token as Token).name,
+        image: (token as Token).image,
       };
       console.log(session);
       return session;
@@ -156,7 +170,7 @@ const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/auth/login-password",
     newUser: "/auth/register",
-    signOut:'/',
+    signOut: "/",
   },
 };
 
