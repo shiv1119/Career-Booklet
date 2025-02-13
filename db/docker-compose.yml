@@ -1,0 +1,30 @@
+services:
+  adminer:
+    image: adminer
+    restart: always
+    container_name: adminer
+    networks:
+      - cb
+    ports:
+      - "8080:8080"
+
+  pgsql:
+    image: postgres:15
+    container_name: db
+    networks:
+      - cb
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: career_booklet
+    ports:
+      - "5432:5432"
+    volumes:
+      - cb_data:/var/lib/postgresql/data
+
+networks:
+  cb:
+    external: true
+volumes:
+  cb_data:
+    external: true
