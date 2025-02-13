@@ -2,10 +2,14 @@
 import { useEffect, useState, useCallback } from "react";
 import { getLatestBlogs, fetchCategories, fetchTags } from "@/app/api/blogs_services/route";
 import { BlogResponse, Category, Subcategory, Tag } from "@/types";
-import { Eye} from "lucide-react";
+import { Eye, ThumbsUp, Bookmark} from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { MdOutlineTimer } from "react-icons/md"; 
+import BlogShare from "@/components/blogs_components/BlogShare";
+import BlogSaveToggle from "@/components/blogs_components/BlogSaveToggle";
+import BlogLikeToggle from "@/components/blogs_components/BlogLikeToggle";
+import { useRouter } from "next/navigation"
 
 const LatestBlogs = () => {
   const {data: session, status} = useSession();
@@ -22,7 +26,7 @@ const LatestBlogs = () => {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [tagSearch, setTagSearch] = useState<string>("");
-
+  const router = useRouter();
   useEffect(() => {
     const loadCategories = async () => {
       try {
@@ -107,6 +111,12 @@ const LatestBlogs = () => {
     setEndDate("");
     fetchBlogs();
   };
+
+  const checkLoginStatus = () => {
+    if(!isAuthenticated){
+      router.push("/auth")
+    }
+  }
 
   return (
     <div className="min-h-screen mx-auto dark:bg-gray-800">
@@ -310,7 +320,14 @@ const LatestBlogs = () => {
                   <span className="flex items-center">
                     <Eye className="w-4 h-4 mr-1" /> {blog.total_views}
                   </span>
-                  <span className="font-medium">By: {blog.author}</span>
+                  <span className="font-medium text-indigo-700">
+                  <Link 
+                    className="text-indigo-700" 
+                    href={Number(session?.user.id) === Number(blog.author) ? "/profile/" : `/profile/profileById/${blog.author}`}
+                  >
+                    By: {blog.author_name}
+                  </Link>
+                  </span>
                   <span className="bg-indigo-100 dark:bg-indigo-700 text-indigo-700 dark:text-white px-2 py-1 rounded-full text-xs font-semibold">
                     <Link href="/posts/postByCategories">{blog.category}</Link>
                   </span>
@@ -336,6 +353,27 @@ const LatestBlogs = () => {
                       View Analytics
                     </Link>
                   )}
+                </div>
+                <div className="mt-2 flex justify-between items-center">
+                  {!isAuthenticated && (<div className="flex items-center">        
+                    <ThumbsUp
+                        onClick={checkLoginStatus}
+                        className="w-7 h-7 cursor-pointer text-gray-700 hover:text-gray-800 dark:text-gray-200 dark:hover:text-gray-100 hover:border hover:border-gray-300 p-1 rounded-full focus:ring focus:ring-gray-300 focus:outline-none"
+                      />
+                      {blog.total_likes}
+                    </div>
+                  )}
+                  {isAuthenticated && (
+                    <div><BlogLikeToggle token={session?.user.accessToken} blog_id={String(blog.id)} /></div>
+                  )}
+                  {!isAuthenticated && (<div className="flex items-center">
+                    <Bookmark onClick={checkLoginStatus} className="w-7 h-7 cursor-pointer text-gray-500 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 hover:border hover:border-gray-300 p-1 rounded-full focus:ring focus:ring-gray-300 focus:outline-none" />{blog.total_saves}
+                  </div>
+                  )}
+                  {isAuthenticated && (
+                    <div><BlogSaveToggle token={session?.user.accessToken} blog_id={String(blog.id)} /></div>
+                  )}
+                  <div className="flex"><BlogShare blogTitle={blog.title} blogUrl={`${process.env.NEXT_PUBLIC_HOST_URL}/posts/getBlogsById/${blog.id}`} /></div>
                 </div>
               </div>
             ))}

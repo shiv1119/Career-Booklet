@@ -6,7 +6,7 @@ from app.models.profile import UserProfile, AboutUser, Skill, UserSkill, Languag
 from datetime import date
 from pydantic import HttpUrl
 from typing import Optional
-from app.schemas.profile import UserProfileGetResponse, UserProfileUpdateRequest, AboutUserCreate, AboutUserUpdate, SkillCreate, UserProfileCreateRequest, AboutUserGetRequest, SkillGet, UserSkillsUpdate, UserSkillsResponse, UserSkillsCreate, LanguageCreate, LanguageResponse, LanguageCreate, UserLanguageCreate, UserLanguageUpdate, UserLanguageResponse, UserLanguageDelete, CauseCreate
+from app.schemas.profile import UserProfileGetResponse, UserProfileUpdateRequest, AboutUserCreate, AboutUserUpdate, SkillCreate, UserProfileCreateRequest, AboutUserGetRequest, SkillGet, UserSkillsUpdate, UserSkillsResponse, UserSkillsCreate, LanguageCreate, LanguageResponse, LanguageCreate, UserLanguageCreate, UserLanguageUpdate, UserLanguageResponse, UserLanguageDelete, CauseCreate, UserProfileMinimalResponse
 from app.utils.helper import save_image, handle_image_update, remove_saved_image
 from uuid import uuid4
 import os
@@ -15,6 +15,11 @@ import os
 from fastapi.responses import JSONResponse
 from sqlalchemy.sql import case
 from typing import List
+from dotenv import load_dotenv
+
+load_dotenv()
+
+PROFILE_SERVICE = os.environ.get("PROFILE_SERVICE")
 
 router = APIRouter()
 
@@ -469,3 +474,69 @@ def get_causes_for_user(request: Request, db: db_dependency):
     if not causes:
         raise HTTPException(status_code=404, detail="No causes found for this user")
     return [cause[0] for cause in causes]
+
+@router.get("/profile/by_id/", response_model=UserProfileGetResponse, status_code=status.HTTP_200_OK)
+async def get_user_profile(db: db_dependency, user_id: int):
+    user_profile = db.query(UserProfile).filter(UserProfile.auth_user_id == user_id).first()
+
+    if user_profile is None:
+        raise HTTPException(status_code=404, detail="User profile not found")
+    if user_profile.profile_background_image:
+        user_profile.profile_background_image = user_profile.profile_background_image.replace("\\", "/")
+    if user_profile.profile_background_image:
+        user_profile.profile_background_image = user_profile.profile_background_image.replace("./", "")
+    if user_profile.profile_background_image:
+        user_profile.profile_background_image = (
+            f"{PROFILE_SERVICE}/static/{user_profile.profile_background_image}"
+        )
+    if user_profile.profile_image:
+        user_profile.profile_image = user_profile.profile_image.replace("\\", "/")
+    if user_profile.profile_image:
+        user_profile.profile_image = user_profile.profile_image.replace("./", "")
+    if user_profile.profile_image:
+        user_profile.profile_image = (
+            f"{PROFILE_SERVICE}/static/{user_profile.profile_image}"
+        )
+    return user_profile
+
+@router.get("/profile/by_id/", response_model=UserProfileGetResponse, status_code=status.HTTP_200_OK)
+async def get_user_profile(db: db_dependency, user_id: int):
+    user_profile = db.query(UserProfile).filter(UserProfile.auth_user_id == user_id).first()
+
+    if user_profile is None:
+        raise HTTPException(status_code=404, detail="User profile not found")
+    if user_profile.profile_background_image:
+        user_profile.profile_background_image = user_profile.profile_background_image.replace("\\", "/")
+    if user_profile.profile_background_image:
+        user_profile.profile_background_image = user_profile.profile_background_image.replace("./", "")
+    if user_profile.profile_background_image:
+        user_profile.profile_background_image = (
+            f"{PROFILE_SERVICE}/static/{user_profile.profile_background_image}"
+        )
+    if user_profile.profile_image:
+        user_profile.profile_image = user_profile.profile_image.replace("\\", "/")
+    if user_profile.profile_image:
+        user_profile.profile_image = user_profile.profile_image.replace("./", "")
+    if user_profile.profile_image:
+        user_profile.profile_image = (
+            f"{PROFILE_SERVICE}/static/{user_profile.profile_image}"
+        )
+    return user_profile
+
+@router.get("/profile/user_info/", response_model=UserProfileMinimalResponse, status_code=status.HTTP_200_OK)
+async def get_user_info(db: db_dependency, user_id: int):
+    user_profile = db.query(UserProfile).filter(UserProfile.auth_user_id == user_id).first()
+
+    if user_profile is None:
+        raise HTTPException(status_code=404, detail="User profile not found")
+
+    profile_image = None
+    if user_profile.profile_image:
+        profile_image = user_profile.profile_image.replace("\\", "/").replace("./", "")
+        profile_image = f"{PROFILE_SERVICE}/static/{profile_image}"
+
+    return UserProfileMinimalResponse(
+        id=user_profile.id,
+        full_name=user_profile.full_name,
+        profile_image=profile_image,
+    )

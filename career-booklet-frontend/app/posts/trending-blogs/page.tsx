@@ -1,4 +1,5 @@
 "use client";
+import { ThumbsUp, Bookmark} from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { getTrendingBlogs, fetchCategories, fetchTags } from "@/app/api/blogs_services/route";
 import { BlogResponse, Category, Subcategory, Tag } from "@/types";
@@ -6,6 +7,10 @@ import { Eye } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { MdTrendingUp } from "react-icons/md";
+import BlogShare from "@/components/blogs_components/BlogShare";
+import BlogSaveToggle from "@/components/blogs_components/BlogSaveToggle";
+import BlogLikeToggle from "@/components/blogs_components/BlogLikeToggle";
+import { useRouter } from "next/navigation";
 
 const TrendingBlogs = () => {
   const { data: session, status } = useSession();
@@ -21,7 +26,7 @@ const TrendingBlogs = () => {
   const [days, setDays] = useState<number>(7);
   const [search, setSearch] = useState<string>("");
   const [tagSearch, setTagSearch] = useState<string>("");
-
+  const router = useRouter();
   useEffect(() => {
     const loadCategories = async () => {
       try {
@@ -124,6 +129,12 @@ const TrendingBlogs = () => {
     setSelectedTags([]);
     setDays(7);
   };
+
+  const checkLoginStatus = () => {
+    if(!isAuthenticated){
+      router.push("/auth")
+    }
+  }
 
   return (
     <div className="min-h-screen mx-auto dark:bg-gray-800">
@@ -254,8 +265,6 @@ const TrendingBlogs = () => {
               </div>
             </div>
           )}
-
-
       {loading ? (
         <div className="w-full space-y-6">
           {[...Array(4)].map((_, index) => (
@@ -305,7 +314,14 @@ const TrendingBlogs = () => {
                   <span className="flex items-center">
                     <Eye className="w-4 h-4 mr-1" /> {blog.total_views}
                   </span>
-                  <span className="font-medium">By: {session?.user?.name|| blog.author}</span>
+                  <span className="font-medium">
+                  <Link 
+                    className="text-indigo-700" 
+                    href={Number(session?.user.id) === Number(blog.author) ? "/profile/" : `/profile/profileById/${blog.author}`}
+                  >
+                    By: {blog.author_name}
+                  </Link>
+                  </span>
                   <span className="bg-indigo-100 dark:bg-indigo-700 text-indigo-700 dark:text-white px-2 py-1 rounded-full text-xs font-semibold">
                   <Link href="/posts/postByCategories">{blog.category}</Link>
                   </span>
@@ -331,6 +347,27 @@ const TrendingBlogs = () => {
                       View Analytics
                     </Link>
                   )}
+                </div>
+                <div className="mt-2 flex justify-between items-center">
+                  {!isAuthenticated && (<div className="text-xs flex gap-1 items-center cursor-pointer text-gray-500 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 hover:border hover:border-gray-300 p-1 rounded-full focus:ring focus:ring-gray-300 focus:outline-none">        
+                    <ThumbsUp
+                        onClick={checkLoginStatus}
+                        className="w-5 h-5"
+                      />
+                      {blog.total_likes} Likes
+                    </div>
+                  )}
+                  {isAuthenticated && (
+                    <div><BlogLikeToggle token={session?.user.accessToken} blog_id={String(blog.id)} /></div>
+                  )}
+                  {!isAuthenticated && (<div className="text-xs flex items-center gap-1 cursor-pointer text-gray-500 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 hover:border hover:border-gray-300 p-1 rounded-full focus:ring focus:ring-gray-300 focus:outline-none">
+                    <Bookmark onClick={checkLoginStatus} className="w-5 h-5" />{blog.total_saves} Saves
+                  </div>
+                  )}
+                  {isAuthenticated && (
+                    <div><BlogSaveToggle token={session?.user.accessToken} blog_id={String(blog.id)} /></div>
+                  )}
+                  <div><BlogShare blogTitle={blog.title} blogUrl={`${process.env.NEXT_PUBLIC_HOST_URL}/posts/getBlogsById/${blog.id}`} /></div>
                 </div>
               </div>
             ))}

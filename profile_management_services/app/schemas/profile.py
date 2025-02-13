@@ -148,3 +148,9 @@ class CauseCreate(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class UserProfileMinimalResponse(BaseModel):
+    id: int
+    full_name: str
+    profile_image: str | None

@@ -1,3 +1,4 @@
+import { AboutCreate } from "@/types";
 export const createProfile = async (formData: any, token: any) => {
     try {
       const response = await fetch(`http://127.0.0.1:9002?service=profile_service&path=/api/profile/`, {
@@ -52,6 +53,7 @@ export const updateProfile = async (formData: any, token: string) => {
   }
 };
 
+
 export const updateProfileImage = async (profileImage: any, token: any) => {
   const formData = new FormData();
   formData.append("profile_image",profileImage);
@@ -90,7 +92,7 @@ export const updateBackgroundImage = async (backgroundImage: any, token: any) =>
   }
 };
 
-export const getAbout = async (token: any) => {
+export const getAbout = async (token: string) => {
   try{
     const response = await fetch(`http://127.0.0.1:9002?service=profile_service&path=/api/profile/about/`, {
       method: 'GET',
@@ -106,7 +108,7 @@ export const getAbout = async (token: any) => {
   }
 };
 
-export const createAbout = async (token: any, formData: any) => {
+export const createAbout = async (token: string, formData: any) => {
   try{
     const response = await fetch(`http://127.0.0.1:9002?services=profile_services&path=/api/profile/about/`,{
       method: 'POST',
@@ -297,3 +299,17 @@ export const createUpdateCauses = async(token: any, causes : any) => {
   }
 }
 
+export const getUserProfile = async (user_id: string) => {
+  try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_GATEWAY}?service=profile_service&path=/api/profile/by_id/&user_id=${user_id}`, {
+          method: 'GET',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+      });
+      return response.json();
+          } catch (error) {
+              console.error('Error getting profile:', error);
+              throw error;
+  }
+};

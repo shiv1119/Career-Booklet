@@ -60,6 +60,8 @@ class Blog(Base):
     category = relationship("Category", back_populates="blogs")
     tags = relationship("Tag", secondary=blog_tag_association, back_populates="blogs")
     views = relationship("BlogView", back_populates="blog", cascade="all, delete-orphan")
+    saved_by_users = relationship("UserSavedBlogs", back_populates="blog", cascade="all, delete-orphan")
+    liked_by_users = relationship("BlogLikes", back_populates="blog", cascade="all, delete-orphan")
 
 @event.listens_for(BlogView, 'after_insert')
 def update_blog_total_views(mapper, connection, target):
@@ -69,3 +71,23 @@ def update_blog_total_views(mapper, connection, target):
         .where(Blog.id == blog.id)
         .values(total_views=Blog.total_views + target.view_count)
     )
+
+class UserSavedBlogs(Base):
+    __tablename__ = "user_saved_blogs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False, index=True)
+    blog_id = Column(Integer, ForeignKey("blogs.id", ondelete="CASCADE"), index=True)
+    saved_at = Column(DateTime, default=func.now())
+
+    blog = relationship("Blog", back_populates="saved_by_users")
+
+class BlogLikes(Base):
+    __tablename__ = "blog_likes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False, index=True)
+    blog_id = Column(Integer, ForeignKey("blogs.id", ondelete="CASCADE"), index=True)
+    liked_at = Column(DateTime, default=func.now())
+
+    blog = relationship("Blog", back_populates="liked_by_users")
