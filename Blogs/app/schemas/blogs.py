@@ -16,16 +16,20 @@ class BlogResponseSchema(BaseModel):
     id: int
     title: str
     content: str
-    author: str
+    author: int
+    author_name: str
+    author_profile_image: Optional[str]
     status: str
-    category: str
-    subcategory: str
-    category_id: int
-    subcategory_id: int
-    created_at: datetime
-    updated_at: datetime
+    category: Optional[str]
+    subcategory: Optional[str]
+    category_id: Optional[int]
+    subcategory_id: Optional[int]
+    created_at: str
+    updated_at: str
     tags: List[str]
     total_views: int
+    total_likes: int
+    total_saves: int
 
     class Config:
         from_attributes = True

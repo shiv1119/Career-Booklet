@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Form, HTTPException, status, Body, Request
 from typing import Annotated, Dict, Any
 from sqlalchemy.orm import Session
-from app.models.profile import Follow
+from app.models.profile import Follow, UserProfile
 from app.schemas.follow import FollowRequest
 from app.core.database import SessionLocal
 from sqlalchemy import func
@@ -18,44 +18,33 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
-@router.post("/follow")
-def follow(req: Request, follow_data: FollowRequest, db: db_dependency):
+@router.post("/follow/")
+def follow(req: Request, following_id: int, db: db_dependency):
     follower_id = req.headers.get("x-user-id")
-    following_id = follow_data.following_id
+    following_id = following_id
 
     if follower_id == following_id:
         raise HTTPException(status_code=400, detail="You cannot follow yourself")
 
     follow = db.query(Follow).filter_by(follower_id=follower_id, following_id=following_id).first()
-
     if follow:
         if follow.is_active:
-            return {"message": "Already following"}
+            follow.is_active = False
+            db.commit()
+            db.refresh(follow)
+            return {"message" : "Un-followed"}
         else:
             follow.is_active = True
             follow.created_at = func.now()
             db.commit()
+            db.refresh(follow)
             return {"message": "Followed again"}
-
+        
     new_follow = Follow(follower_id=follower_id, following_id=following_id)
     db.add(new_follow)
     db.commit()
+    db.refresh()
     return {"message": "Followed successfully"}
-
-@router.post("/unfollow")
-def unfollow(req: Request, follow_data: FollowRequest, db: db_dependency):
-    follower_id = req.headers.get("x-user-id")
-    following_id = follow_data.following_id
-
-    follow = db.query(Follow).filter_by(follower_id=follower_id, following_id=following_id, is_active=True).first()
-    
-    if not follow:
-        return {"message": "Not following this user"}
-
-    follow.is_active = False
-    follow.created_at = func.now()
-    db.commit()
-    return {"message": "Unfollowed successfully"}
 
 TIME_PERIODS = {
     "24h": timedelta(days=1),
@@ -133,3 +122,159 @@ def followers_stats(req: Request, period: str, db: Session = Depends(get_db)):
         "percentage_change": round(percentage_change, 2),
         "total_followers": total_followers,
     }
+
+@router.get("/check/follow/")
+def follow(req: Request, following_id: int, db: db_dependency):
+    follower_id = req.headers.get("x-user-id")
+    following_id = following_id
+
+    if follower_id == following_id:
+        raise HTTPException(status_code=400, detail="You cannot follow yourself")
+
+    follow = db.query(Follow).filter_by(follower_id=follower_id, following_id=following_id).first()
+    
+    return follow.is_active
+
+@router.get("/get/user/follow/stats/")
+def get_follow_stats(user_id: int, db: Session = Depends(get_db)):
+    if not user_id:
+        raise HTTPException(status_code=400, detail="User ID is required")
+
+    total_followers = db.query(Follow).filter_by(following_id=user_id, is_active=True).count()
+    total_following = db.query(Follow).filter_by(follower_id=user_id, is_active=True).count()
+
+    return {
+        "total_followers": total_followers,
+        "total_following": total_following
+    }
+
+
+@router.get("/followers/")
+def get_followers(
+    user_id: int, 
+    current_user_id: int, 
+    limit: int = 20,
+    last_follower_id: int = None,  
+    db: Session = Depends(get_db)
+):
+    if not user_id:
+        raise HTTPException(status_code=400, detail="User ID is required")
+    query = (
+        db.query(UserProfile.id, UserProfile.full_name, UserProfile.profile_image)
+        .join(Follow, Follow.follower_id == UserProfile.auth_user_id)
+        .filter(Follow.following_id == user_id, Follow.is_active == True)
+    )
+    if last_follower_id:
+        query = query.filter(UserProfile.id > last_follower_id)
+
+    followers = query.order_by(UserProfile.id).limit(limit).all()
+
+    mutuals = (
+        db.query(UserProfile.auth_user_id)
+        .join(Follow, Follow.follower_id == UserProfile.auth_user_id)
+        .filter(Follow.following_id == user_id, Follow.is_active == True)
+        .filter(Follow.follower_id == current_user_id)
+        .all()
+    )
+    mutual_ids = {m[0] for m in mutuals}
+    followers_list = [
+        {
+            "id": f.id,
+            "full_name": f.full_name,
+            "profile_image": f.profile_image,
+            "is_mutual": f.id in mutual_ids,
+        }
+        for f in followers
+    ]
+    next_cursor = followers_list[-1]["id"] if followers_list else None
+
+    return {"followers": followers_list, "next_cursor": next_cursor}
+
+
+@router.get("/followers/")
+def get_followers(
+    user_id: int, 
+    current_user_id: int, 
+    limit: int = 10, 
+    last_follower_id: int = None,
+    db: Session = Depends(get_db)
+):
+    if not user_id:
+        raise HTTPException(status_code=400, detail="User ID is required")
+    query = (
+        db.query(UserProfile.id, UserProfile.full_name, UserProfile.profile_image)
+        .join(Follow, Follow.follower_id == UserProfile.auth_user_id)
+        .filter(Follow.following_id == user_id, Follow.is_active == True)
+    )
+    if last_follower_id:
+        query = query.filter(UserProfile.id > last_follower_id)
+
+    followers = query.order_by(UserProfile.id).limit(limit).all()
+    mutuals = (
+        db.query(UserProfile.auth_user_id)
+        .join(Follow, Follow.follower_id == UserProfile.auth_user_id)
+        .filter(Follow.following_id == user_id, Follow.is_active == True)
+        .filter(Follow.follower_id == current_user_id)
+        .all()
+    )
+    mutual_ids = {m[0] for m in mutuals}
+
+    followers_list = [
+        {
+            "id": f.id,
+            "full_name": f.full_name,
+            "profile_image": f.profile_image,
+            "is_mutual": f.id in mutual_ids,
+        }
+        for f in followers
+    ]
+    next_cursor = followers_list[-1]["id"] if followers_list else None
+
+    return {"followers": followers_list, "next_cursor": next_cursor}
+
+
+@router.get("/followers/suggestions/")
+def get_follow_suggestions(
+    current_user_id: int, 
+    limit: int = 10,  
+    db: Session = Depends(get_db)
+):
+    if not current_user_id:
+        raise HTTPException(status_code=400, detail="User ID is required")
+    
+    following_subquery = (
+        db.query(Follow.following_id)
+        .filter(Follow.follower_id == current_user_id, Follow.is_active == True)
+        .subquery()
+    )
+    suggested_users_query = (
+        db.query(
+            UserProfile.id, 
+            UserProfile.full_name, 
+            UserProfile.profile_image,
+            db.query(Follow).filter(Follow.following_id == UserProfile.auth_user_id, Follow.is_active == True).count().label("total_followers"),
+            db.query(Follow).filter(Follow.follower_id == UserProfile.auth_user_id, Follow.is_active == True).count().label("total_following")
+        )
+        .join(Follow, Follow.follower_id == UserProfile.auth_user_id)
+        .filter(Follow.following_id.in_(following_subquery))
+        .filter(Follow.follower_id != current_user_id)
+        .filter(Follow.following_id.notin_(following_subquery))
+        .distinct() 
+        .limit(limit)
+    )
+
+    suggested_users = suggested_users_query.all()
+
+    suggestions_list = [
+        {
+            "id": s.id,
+            "full_name": s.full_name,
+            "profile_image": s.profile_image,
+            "total_followers": s.total_followers,
+            "total_following": s.total_following,
+        }
+        for s in suggested_users
+    ]
+
+    return {"suggestions": suggestions_list}
+

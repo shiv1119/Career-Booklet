@@ -34,6 +34,8 @@ public_routes = {
     "increment_view": "/api/blogs/by_id/increment-view/",
     "get_all_tags": "/api/tags/",
     "trending_blogs": "/api/blogs/trending/",
+    "profile_by_id": "/api/profile/by_id/",
+    "total_followers": "/api/get/user/follow/stats/"
 }
 
 AUTH_SERVICE_URL = f"{os.environ.get("AUTH_SERVICE")}/api/validate-token"

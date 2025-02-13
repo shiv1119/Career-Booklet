@@ -1,3 +1,4 @@
+"use server"
 import { BlogResponse, BlogCreateData, Category, Tag, FetchOptions } from "@/types";
 
 const API_GATEWAY_URL = process.env.NEXT_PUBLIC_API_GATEWAY;
@@ -294,3 +295,88 @@ export const fetchTopUserBlogs = async ({ token, queryParams }: FetchOptions) =>
   }
 };
 
+
+export async function handelSave(token: string | undefined, blog_id: string): Promise<{ message: string; is_saved: boolean; total_saves: number}> {
+  if (!token) {
+    return { message: "User not authenticated", is_saved: false, total_saves: 0};
+  }
+
+  const url = new URL(`${API_GATEWAY_URL}`);
+  url.searchParams.append("service", "blogs_services");
+  url.searchParams.append("path", "/api/blogs/toggle-save/");
+  url.searchParams.append("blog_id", blog_id);
+
+  const response = await fetch(url.toString(), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    }
+  });
+  return await response.json();
+
+}
+
+export const fetchSaveStatus = async (token: string | undefined, blog_id: string): Promise<{is_saved: boolean, total_saves: number }> => {
+    const url = new URL(`${API_GATEWAY_URL}`);
+    url.searchParams.append("service", "blogs_services");
+    url.searchParams.append("path", "/api/blogs/is-saved/");
+    url.searchParams.append("blog_id", blog_id);
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+  
+    if (!res.ok) {
+      console.log('Failed to fetch save status');
+    }
+  
+    const data = await res.json();
+    return data;
+  };
+
+
+  export async function handelBlogLike(token: string | undefined, blog_id: string): Promise<{ message: string; is_liked: boolean; total_likes: number }> {
+    if (!token) {
+      return { message: "User not authenticated", is_liked: false, total_likes: 0};
+    }
+  
+    const url = new URL(`${API_GATEWAY_URL}`);
+    url.searchParams.append("service", "blogs_services");
+    url.searchParams.append("path", "/api/blogs/toggle-like/");
+    url.searchParams.append("blog_id", blog_id);
+  
+    const response = await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      }
+    });
+    return await response.json();
+  
+  }
+  
+  export const fetchLikeStatus = async (token: string | undefined, blog_id: string): Promise<{is_liked: boolean; total_likes: number }> => {
+      const url = new URL(`${API_GATEWAY_URL}`);
+      url.searchParams.append("service", "blogs_services");
+      url.searchParams.append("path", "/api/blogs/is-liked/");
+      url.searchParams.append("blog_id", blog_id);
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+    
+      if (!res.ok) {
+        console.log('Failed to fetch save status');
+      }
+    
+      const data = await res.json();
+      return data;
+    };

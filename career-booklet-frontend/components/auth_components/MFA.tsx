@@ -14,7 +14,6 @@ export default function MfaToggle({ userId }:UserId) {
 
   useEffect(() => {
     if (!userId) return;
-
     const fetchStatus = async () => {
       try {
         const enabled = await fetchMfaStatus(userId);

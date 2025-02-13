@@ -3,6 +3,8 @@ export interface BlogResponse {
     title: string;
     content: string;
     author: string;
+    author_name: string;
+    author_profile_image: string;
     status: string;
     category: string | null;
     subcategory: string | null;
@@ -12,6 +14,8 @@ export interface BlogResponse {
     updated_at: string;
     tags: string[];
     total_views: number;
+    total_likes: number;
+    total_saves: number;
   }
 
 export interface BlogCreateData {
@@ -57,3 +61,6 @@ export interface AnalyticsData {
   total_current_views: number;
 }
 
+export interface AboutCreate{
+  about?: string;
+}

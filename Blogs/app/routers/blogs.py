@@ -2,12 +2,20 @@ from fastapi import  APIRouter, Depends, status, HTTPException, Query, File, Upl
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from typing import Annotated, List, Optional, Dict, Any, cast
-from app.models.blogs import Tag, Category, SubCategory, Blog, BlogView, blog_tag_association
+from app.models.blogs import Tag, Category, SubCategory, Blog, BlogView, blog_tag_association, UserSavedBlogs, BlogLikes
 from app.schemas.blogs import BlogCreateSchema, BlogResponseSchema, CategorySchema, SubCategorySchema, TagResponse
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.sql import func, extract
 from sqlalchemy.orm import joinedload
 from sqlalchemy import func, or_, text
+import httpx
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+
+PROFILE_SERVICE: str = os.environ.get("PROFILE_SERVICE")
 
 router = APIRouter()
 def get_db():
@@ -19,25 +27,56 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
-def format_blogs_response(blogs):
-    return [
-        BlogResponseSchema(
-            id=blog.id,
-            title=blog.title,
-            content=blog.content,
-            author=blog.author,
-            status=blog.status,
-            category=blog.category.name if blog.category else None,
-            subcategory=blog.subcategory.name if blog.subcategory else None,
-            category_id=blog.category_id,
-            subcategory_id=blog.subcategory_id,
-            created_at=blog.created_at,
-            updated_at=blog.updated_at,
-            tags=[tag.name for tag in blog.tags],
-            total_views=blog.total_views,
+async def fetch_user_info(user_id: int):
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(f"{PROFILE_SERVICE}/api/profile/user_info/", params={"user_id": user_id})
+            if response.status_code == 200:
+                return response.json()
+            return None
+        except httpx.HTTPError as e:
+            print(f"Error fetching user info: {e}")
+            return None
+        
+async def get_total_likes(blog_id: int, db: db_dependency):
+        total_likes = db.query(BlogLikes).filter(BlogLikes.blog_id == blog_id).count()
+        return total_likes
+
+async def get_total_saves(blog_id: int, db: db_dependency):
+        total_saves = db.query(UserSavedBlogs).filter(UserSavedBlogs.blog_id == blog_id).count()
+        return total_saves
+
+
+async def format_blogs_response(blogs: List, db: db_dependency):
+    blog_responses = []
+
+    for blog in blogs:
+        author_info = await fetch_user_info(blog.author)
+        total_likes = await get_total_likes(blog.id, db)
+        total_saves = await get_total_saves(blog.id, db)
+        blog_responses.append(
+            BlogResponseSchema(
+                id=blog.id,
+                title=blog.title,
+                content=blog.content,
+                author=blog.author,
+                author_name=author_info["full_name"] if author_info else "Unknown",
+                author_profile_image=author_info["profile_image"] if author_info else None,
+                status=blog.status,
+                category=blog.category.name if blog.category else None,
+                subcategory=blog.subcategory.name if blog.subcategory else None,
+                category_id=blog.category_id,
+                subcategory_id=blog.subcategory_id,
+                created_at=blog.created_at.isoformat(),  
+                updated_at=blog.updated_at.isoformat(),
+                tags=[tag.name for tag in blog.tags],
+                total_views=blog.total_views,
+                total_likes=total_likes,
+                total_saves=total_saves
+            )
         )
-        for blog in blogs
-    ]
+
+    return blog_responses
 
 
 @router.post("/blogs/", status_code=status.HTTP_201_CREATED)
@@ -128,29 +167,35 @@ def update_blog(user_id: int, blog_id: int, blog_data: BlogCreateSchema, db: db_
     return blog
 
 @router.get("/blogs/by_id/", response_model=BlogResponseSchema)
-def get_blog(blog_id: int, db: db_dependency):
+async def get_blog(blog_id: int, db: db_dependency):
     blog = db.query(Blog).filter(Blog.id == blog_id, Blog.status == 'published')\
         .options(joinedload(Blog.category), joinedload(Blog.subcategory), joinedload(Blog.tags))\
         .first()
     
     if not blog:
         raise HTTPException(status_code=404, detail="Blog not found")
-    
+    author_info = await fetch_user_info(blog.author)
+    total_likes = await get_total_likes(blog.id, db)
+    total_saves = await get_total_saves(blog.id, db)
     return BlogResponseSchema(
-        id=blog.id,
-        title=blog.title,
-        content=blog.content,
-        author=blog.author, 
-        status=blog.status,
-        category=blog.category.name,
-        subcategory=blog.subcategory.name, 
-        category_id=blog.category_id,
-        subcategory_id=blog.subcategory_id,
-        created_at=blog.created_at,
-        updated_at=blog.updated_at,
-        tags=[tag.name for tag in blog.tags], 
-        total_views=blog.total_views,
-    )
+            id=blog.id,
+            title=blog.title,
+            content=blog.content,
+            author=blog.author,
+            author_name=author_info["full_name"] if author_info else "Unknown",
+            author_profile_image=author_info["profile_image"] if author_info else None,
+            status=blog.status,
+            category=blog.category.name if blog.category else None,
+            subcategory=blog.subcategory.name if blog.subcategory else None,
+            category_id=blog.category_id,
+            subcategory_id=blog.subcategory_id,
+            created_at=blog.created_at.isoformat(),  
+            updated_at=blog.updated_at.isoformat(),
+            tags=[tag.name for tag in blog.tags],
+            total_views=blog.total_views,
+            total_likes=total_likes,
+            total_saves=total_saves
+        )
 
 @router.get("/blogs", response_model=List[BlogResponseSchema])
 def get_all_blogs(db: db_dependency, page: int = Query(1, ge=1), page_size: int = Query(20, le=100)):
@@ -162,7 +207,7 @@ def get_all_blogs(db: db_dependency, page: int = Query(1, ge=1), page_size: int 
     if not blogs:
         raise HTTPException(status_code=404, detail="No blogs found")
     
-    return format_blogs_response(blogs)
+    return format_blogs_response(blogs, db)
 
 
 @router.delete("/blogs/{blog_id}")
@@ -194,10 +239,10 @@ def get_blogs_by_author(
     if not blogs:
         raise HTTPException(status_code=404, detail="No blogs found for this author")
 
-    return format_blogs_response(blogs)
+    return format_blogs_response(blogs, db)
 
 @router.get("/blogs/trending/", response_model=List[BlogResponseSchema])
-def get_trending_blogs(
+async def get_trending_blogs(
     db: db_dependency,
     days: int = Query(7, ge=1, le=30, description="Number of days for trending (1 to 30)"),
     limit: int = Query(10, ge=1, description="Number of blogs to return"),
@@ -237,7 +282,9 @@ def get_trending_blogs(
     if not trending_blogs:
         raise HTTPException(status_code=404, detail="No trending blogs found")
 
-    return format_blogs_response(trending_blogs)
+    formatted_blogs = await format_blogs_response(trending_blogs, db)  
+
+    return formatted_blogs
 
 @router.get("/blogs/tags", response_model=List[BlogResponseSchema])
 def get_blogs_by_tags(
@@ -276,7 +323,7 @@ def get_blogs_by_tags(
     if not blogs:
         raise HTTPException(status_code=404, detail="No blogs found with the given tag")
     
-    return format_blogs_response(blogs)
+    return format_blogs_response(blogs, db)
 
 @router.get("/blogs/most-watched", response_model=List[BlogResponseSchema])
 def get_most_watched_blogs(
@@ -301,7 +348,7 @@ def get_most_watched_blogs(
     if not most_watched_blogs:
         raise HTTPException(status_code=404, detail="No blogs found")
 
-    return format_blogs_response(most_watched_blogs)
+    return format_blogs_response(most_watched_blogs, db)
 
 @router.get("/blogs/category/{category_id}", response_model=List[BlogResponseSchema])
 def get_blogs_by_category(
@@ -326,7 +373,7 @@ def get_blogs_by_category(
     if not blogs:
         raise HTTPException(status_code=404, detail="No blogs found in this category")
 
-    return format_blogs_response(blogs)
+    return format_blogs_response(blogs, db)
 
 
 @router.get("/blogs/subcategory/{subcategory_id}", response_model=List[BlogResponseSchema])
@@ -350,11 +397,11 @@ def get_blogs_by_subcategory(
 
     if not blogs:
         raise HTTPException(status_code=404, detail="No blogs found in this subcategory")
-    return format_blogs_response(blogs)
+    return format_blogs_response(blogs, db)
 
 @router.get("/blogs/trending/category/{category_id}", response_model=List[BlogResponseSchema])
 @router.get("/blogs/trending/subcategory/{subcategory_id}", response_model=List[BlogResponseSchema])
-def get_trending_blogs_for_category_or_subcategory(
+async def get_trending_blogs_for_category_or_subcategory(
     db: db_dependency,
     category_id: Optional[int] = None,
     subcategory_id: Optional[int] = None,
@@ -387,8 +434,8 @@ def get_trending_blogs_for_category_or_subcategory(
 
     if not trending_blogs:
         raise HTTPException(status_code=404, detail="No trending blogs found")
-
-    return format_blogs_response(trending_blogs)
+    formatted_blogs = await format_blogs_response(trending_blogs, db) 
+    return formatted_blogs
 
 @router.post("/blogs/by_id/increment-view/", response_model=dict)
 def increment_view(blog_id: int, db: Session = Depends(get_db)):
@@ -539,7 +586,7 @@ def get_user_views(
     }
 
 @router.get("/blogs/latest-blogs/", response_model=List[BlogResponseSchema])
-def get_latest_blogs(
+async def get_latest_blogs(
     db: db_dependency,
     page: int = Query(1, ge=1),
     page_size: int = Query(10, le=100),
@@ -579,8 +626,8 @@ def get_latest_blogs(
 
     if not latest_blogs:
         raise HTTPException(status_code=404, detail="No published blogs found")
-    
-    return format_blogs_response(latest_blogs)
+    formatted_blogs = await format_blogs_response(latest_blogs, db) 
+    return formatted_blogs
 
 
 
@@ -687,3 +734,93 @@ def get_top_blogs_by_views(
         "top_5_blogs": top_5_blogs_data,
     }
 
+
+#save blogs
+
+@router.post("/blogs/toggle-save/", status_code=status.HTTP_200_OK)
+async def toggle_save_blog(blog_id: int, db: db_dependency, request: Request):
+    user_id = request.headers.get("x-user-id")
+
+    if not user_id:
+        raise HTTPException(status_code=400, detail="User ID is required in headers")
+
+    blog = db.query(Blog).filter(Blog.id == blog_id).first()
+    if not blog:
+        raise HTTPException(status_code=404, detail="Blog not found")
+
+    saved_blog = db.query(UserSavedBlogs).filter(
+        UserSavedBlogs.user_id == user_id,
+        UserSavedBlogs.blog_id == blog_id
+    ).first()
+    
+    total_saves = db.query(UserSavedBlogs).filter(UserSavedBlogs.blog_id == blog_id).count()
+    if saved_blog:
+        db.delete(saved_blog)
+        db.commit()
+        return {"message": "Blog unsaved successfully", "is_saved": False, "total_saves": total_saves-1}
+    else:
+        new_saved_blog = UserSavedBlogs(user_id=user_id, blog_id=blog_id)
+        db.add(new_saved_blog)
+        db.commit()
+        db.refresh(new_saved_blog)
+        return {"message": "Blog saved successfully", "is_saved": True, "total_saves": total_saves+1}
+
+
+@router.get("/blogs/is-saved/", status_code=status.HTTP_200_OK)
+async def is_blog_saved(blog_id: int, db: db_dependency, request: Request):
+    user_id = request.headers.get("x-user-id")
+    total_saves = db.query(UserSavedBlogs).filter(UserSavedBlogs.blog_id == blog_id).count()
+    if not user_id:
+        return {"is_saved": False, "total_saves": total_saves}
+
+    is_saved = db.query(UserSavedBlogs).filter(
+        UserSavedBlogs.user_id == user_id,
+        UserSavedBlogs.blog_id == blog_id
+    ).first() is not None
+
+    total_saves = db.query(UserSavedBlogs).filter(UserSavedBlogs.blog_id == blog_id).count()
+
+    return {"is_saved": is_saved, "total_saves": total_saves}
+
+
+@router.post("/blogs/toggle-like/", status_code=status.HTTP_200_OK)
+async def toggle_like_blog(blog_id: int, db: db_dependency, request: Request):
+    user_id = request.headers.get("x-user-id")
+
+    if not user_id:
+        raise HTTPException(status_code=400, detail="User ID is required in headers")
+
+    blog = db.query(Blog).filter(Blog.id == blog_id).first()
+    if not blog:
+        raise HTTPException(status_code=404, detail="Blog not found")
+
+    existing_like = db.query(BlogLikes).filter(
+        BlogLikes.user_id == user_id,
+        BlogLikes.blog_id == blog_id
+    ).first()
+    total_likes = db.query(BlogLikes).filter(BlogLikes.blog_id == blog_id).count()
+    if existing_like:
+        db.delete(existing_like)
+        db.commit()
+        return {"message": "Blog unliked successfully", "is_liked": False, "total_likes": total_likes-1}
+    else:
+        new_like = BlogLikes(user_id=user_id, blog_id=blog_id)
+        db.add(new_like)
+        db.commit()
+        db.refresh(new_like)
+    
+        return {"message": "Blog liked successfully", "is_liked": True, "total_likes": total_likes+1}
+
+@router.get("/blogs/is-liked/", status_code=status.HTTP_200_OK)
+async def is_blog_liked(blog_id: int, db: db_dependency, request: Request):
+    user_id = request.headers.get("x-user-id")
+    total_likes = db.query(BlogLikes).filter(BlogLikes.blog_id == blog_id).count()
+    if not user_id:
+        return {"is_liked": False, "total_likes": total_likes}
+
+    is_liked = db.query(BlogLikes).filter(
+        BlogLikes.user_id == user_id,
+        BlogLikes.blog_id == blog_id
+    ).first() is not None
+
+    return {"is_liked": is_liked, "total_likes": total_likes}
